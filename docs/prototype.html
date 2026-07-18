@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TrailStamp — Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pine:#1E3D2F;
+    --pine-dark:#122A20;
+    --moss:#5B7553;
+    --rust:#BB5A2E;
+    --rust-dark:#9A491F;
+    --canvas:#D9D2B8;
+    --canvas-light:#EDE8D7;
+    --ink:#2A241C;
+    --gold:#C9A648;
+    --paper:#FBF8F1;
+    --danger:#8B3A3A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(circle at 30% 20%, #2A4C3B, #0F1F17 75%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Inter',sans-serif;
+    padding:32px 12px;
+  }
+  .stage-label{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%);
+    color:rgba(255,255,255,.55); font-family:'JetBrains Mono',monospace;
+    font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  }
+  .phone{
+    width:375px; height:812px; background:var(--paper);
+    border-radius:44px; border:10px solid #0C0C0C;
+    box-shadow:0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 2px rgba(255,255,255,.04);
+    position:relative; overflow:hidden;
+  }
+  .notch{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    width:120px; height:24px; background:#0C0C0C; border-radius:14px; z-index:50;
+  }
+  .status-bar{
+    height:46px; display:flex; align-items:flex-end; justify-content:space-between;
+    padding:0 24px 6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
+    color:var(--ink); background:var(--paper);
+  }
+  .screen{
+    display:none; flex-direction:column; height:calc(100% - 46px - 74px);
+    overflow-y:auto; background:var(--paper);
+  }
+  .screen.active{display:flex;}
+  .screen.no-nav{height:calc(100% - 46px);}
+
+  /* topo texture strip */
+  .topo{
+    background-color:var(--pine);
+    background-image:
+      repeating-radial-gradient(circle at 20% 30%, transparent 0, transparent 18px, rgba(255,255,255,.035) 19px, transparent 20px),
+      repeating-radial-gradient(circle at 80% 70%, transparent 0, transparent 26px, rgba(255,255,255,.04) 27px, transparent 28px);
+  }
+
+  /* ---- Welcome ---- */
+  #screen-welcome{align-items:center; justify-content:center; text-align:center; padding:40px 32px;}
+  .brand-stamp{
+    width:132px; height:132px; border-radius:50%;
+    border:3px dashed var(--gold);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    margin-bottom:28px; position:relative;
+    background:var(--pine); color:var(--canvas-light);
+  }
+  .brand-stamp .peak{font-size:38px; line-height:1;}
+  .brand-stamp .word{font-family:'Oswald'; font-size:11px; letter-spacing:.14em; margin-top:4px;}
+  h1.title{font-family:'Oswald'; font-size:30px; letter-spacing:.02em; color:var(--pine); text-transform:uppercase;}
+  .subtitle{color:#6b6455; font-size:14px; margin-top:10px; line-height:1.5; max-width:260px;}
+  .btn{
+    font-family:'Oswald'; letter-spacing:.06em; text-transform:uppercase; font-size:13px;
+    border:none; border-radius:10px; padding:15px 20px; cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--rust); color:var(--paper); width:100%;}
+  .btn-primary:hover{background:var(--rust-dark);}
+  .btn-ghost{background:transparent; color:var(--pine); border:1.5px solid var(--pine); width:100%; margin-top:10px;}
+  .welcome-actions{width:100%; margin-top:32px;}
+
+  /* ---- Top app bar (shared) ---- */
+  .app-bar{
+    padding:18px 20px 14px; display:flex; align-items:center; justify-content:space-between;
+    background:var(--paper); border-bottom:1px solid #E4DDC9;
+  }
+  .app-bar h2{font-family:'Oswald'; font-size:19px; letter-spacing:.02em; color:var(--pine); text-transform:uppercase;}
+  .tier-pill{
+    font-family:'JetBrains Mono'; font-size:10px; font-weight:700; letter-spacing:.05em;
+    padding:5px 10px; border-radius:20px; text-transform:uppercase;
+  }
+  .tier-free{background:#E4DDC9; color:#6b6455;}
+  .tier-membership{background:#dfe9dc; color:var(--pine);}
+  .tier-premium{background:var(--gold); color:#3a2e0e;}
+
+  /* ---- Home ---- */
+  .progress-card{
+    margin:16px 20px; padding:20px; border-radius:16px; color:var(--canvas-light);
+    display:flex; align-items:center; gap:16px;
+  }
+  .progress-ring{
+    width:64px; height:64px; border-radius:50%; flex-shrink:0;
+    background:conic-gradient(var(--gold) calc(var(--pct,60)*1%), rgba(255,255,255,.18) 0);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .progress-ring span{
+    width:50px; height:50px; border-radius:50%; background:var(--pine-dark);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-size:12px; font-weight:700;
+  }
+  .progress-card .label{font-family:'Oswald'; font-size:13px; letter-spacing:.05em; text-transform:uppercase; opacity:.85;}
+  .progress-card .sub{font-size:12px; opacity:.65; margin-top:4px;}
+
+  .upgrade-banner{
+    margin:0 20px 6px; padding:14px 16px; border-radius:12px;
+    background:var(--canvas-light); border:1px dashed var(--gold);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    cursor:pointer;
+  }
+  .upgrade-banner .txt{font-size:12.5px; color:var(--ink); line-height:1.4;}
+  .upgrade-banner .txt b{color:var(--rust-dark);}
+  .upgrade-banner .go{font-family:'Oswald'; font-size:11px; color:var(--rust); letter-spacing:.05em; text-transform:uppercase; white-space:nowrap;}
+
+  .section-label{
+    font-family:'Oswald'; font-size:12px; letter-spacing:.09em; text-transform:uppercase;
+    color:#8a8272; margin:22px 20px 10px;
+  }
+  .park-list{padding:0 20px 20px; display:flex; flex-direction:column; gap:10px;}
+  .park-card{
+    display:flex; align-items:center; gap:12px; background:var(--canvas-light);
+    border-radius:14px; padding:12px; cursor:pointer;
+  }
+  .park-stamp{
+    width:46px; height:46px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    background:var(--pine); color:var(--canvas-light); border:2px dashed var(--gold);
+  }
+  .park-info b{font-family:'Inter'; font-size:14px; color:var(--ink); display:block;}
+  .park-info span{font-size:11.5px; color:#8a8272; font-family:'JetBrains Mono';}
+  .park-flags{margin-left:auto; display:flex; gap:6px; font-size:14px;}
+
+  /* ---- Add park ---- */
+  .form-wrap{padding:20px;}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'Oswald'; font-size:11px; letter-spacing:.07em;
+    text-transform:uppercase; color:#8a8272; margin-bottom:6px;
+  }
+  .field input, .field textarea{
+    width:100%; border:1.5px solid #E4DDC9; border-radius:10px; padding:11px 12px;
+    font-family:'Inter'; font-size:14px; color:var(--ink); background:var(--paper);
+  }
+  .field textarea{min-height:80px; resize:none;}
+  .photo-row{display:flex; gap:8px; margin-top:4px;}
+  .photo-slot{
+    width:64px; height:64px; border-radius:10px; border:1.5px dashed #cfc6ad;
+    display:flex; align-items:center; justify-content:center; font-size:20px; color:#b8ae94;
+  }
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--canvas-light); border-radius:10px;}
+  .toggle-row .t{font-size:13px; color:var(--ink);}
+  .switch{width:42px; height:24px; border-radius:14px; background:#cfc6ad; position:relative; cursor:pointer; flex-shrink:0;}
+  .switch.on{background:var(--pine);}
+  .switch .knob{position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--paper); transition:left .15s;}
+  .switch.on .knob{left:20px;}
+  .locked-note{font-size:11px; color:var(--rust-dark); margin-top:6px; display:flex; gap:5px; align-items:center;}
+
+  /* ---- Detail ---- */
+  .detail-hero{height:150px; background:linear-gradient(135deg, var(--moss), var(--pine)); display:flex; align-items:center; justify-content:center; font-size:52px;}
+  .detail-body{padding:20px;}
+  .detail-body h3{font-family:'Oswald'; font-size:21px; color:var(--pine); text-transform:uppercase;}
+  .detail-body .meta{font-family:'JetBrains Mono'; font-size:11.5px; color:#8a8272; margin-top:4px;}
+  .gallery{display:flex; gap:8px; margin:16px 0;}
+  .gallery div{width:64px; height:64px; border-radius:10px; background:var(--canvas-light); display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .note-box{background:var(--canvas-light); border-radius:12px; padding:14px; font-size:13.5px; line-height:1.55; color:var(--ink);}
+
+  /* ---- Trails ---- */
+  .trail-card{
+    margin:0 20px 12px; padding:14px; border-radius:14px; background:var(--canvas-light);
+    display:flex; gap:12px; align-items:flex-start; position:relative; overflow:hidden;
+  }
+  .trail-card.locked::after{
+    content:"🔒"; position:absolute; top:12px; right:12px; font-size:14px;
+  }
+  .trail-card.locked{filter:grayscale(.4); opacity:.72;}
+  .trail-icon{width:42px; height:42px; border-radius:10px; background:var(--pine); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
+  .trail-card b{font-family:'Inter'; font-size:14px; color:var(--ink); display:block;}
+  .trail-card .desc{font-size:12px; color:#8a8272; margin-top:3px; line-height:1.4;}
+  .trail-card .clues{font-family:'JetBrains Mono'; font-size:10.5px; color:var(--rust-dark); margin-top:6px;}
+
+  .guide-card{
+    margin:0 20px 12px; padding:12px 14px; border-radius:12px; background:var(--canvas-light);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .guide-card .t{font-size:13.5px; color:var(--ink); font-weight:600;}
+  .guide-card .theme{font-size:11px; color:#8a8272; margin-top:2px;}
+  .pick-btn{
+    font-family:'Oswald'; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:7px 12px; border-radius:8px; border:1.5px solid var(--pine); color:var(--pine); background:transparent; cursor:pointer; white-space:nowrap;
+  }
+  .pick-btn.picked{background:var(--pine); color:var(--paper);}
+
+  /* ---- Park database ---- */
+  .db-search-wrap{padding:0 20px 6px;}
+  .db-search{
+    width:100%; border:1.5px solid #E4DDC9; border-radius:12px; padding:11px 14px;
+    font-family:'Inter'; font-size:13.5px; color:var(--ink); background:var(--canvas-light);
+  }
+  .db-card{
+    margin:0 20px 10px; padding:12px; border-radius:14px; background:var(--paper);
+    border:1.5px solid #E4DDC9; display:flex; gap:12px; align-items:center; cursor:pointer;
+  }
+  .db-icon{width:44px; height:44px; border-radius:10px; background:var(--moss); color:var(--canvas-light); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;}
+  .db-card b{font-family:'Inter'; font-size:13.5px; color:var(--ink); display:block;}
+  .db-card .loc{font-family:'JetBrains Mono'; font-size:10.5px; color:#8a8272; margin-top:2px;}
+  .db-card .counts{font-size:10.5px; color:var(--pine); margin-top:4px;}
+  .db-empty{padding:20px; text-align:center; color:#8a8272; font-size:12.5px;}
+
+  .db-suggestions{margin-top:6px; border:1.5px solid #E4DDC9; border-radius:10px; overflow:hidden; display:none;}
+  .db-suggestions.show{display:block;}
+  .db-suggestion-item{padding:10px 12px; font-size:13px; color:var(--ink); cursor:pointer; border-bottom:1px solid #EFE9D8;}
+  .db-suggestion-item:last-child{border-bottom:none;}
+  .db-suggestion-item:hover, .db-suggestion-item:active{background:var(--canvas-light);}
+  .db-suggestion-item .loc{font-family:'JetBrains Mono'; font-size:10px; color:#8a8272; display:block; margin-top:2px;}
+  .db-linked-tag{font-size:11px; color:var(--pine); margin-top:6px; display:none; align-items:center; gap:4px;}
+  .db-linked-tag.show{display:flex;}
+  .manual-link{font-size:11.5px; color:#8a8272; margin-top:8px; text-decoration:underline; cursor:pointer; display:inline-block;}
+
+  .db-detail-body{padding:20px;}
+  .db-detail-body h3{font-family:'Oswald'; font-size:20px; color:var(--pine); text-transform:uppercase;}
+  .db-detail-body .loc{font-family:'JetBrains Mono'; font-size:11.5px; color:#8a8272; margin-top:4px;}
+  .db-detail-body p.desc{font-size:13px; color:#5c5545; line-height:1.55; margin-top:14px;}
+  .db-map-box{height:110px; border-radius:12px; background:repeating-linear-gradient(135deg, var(--canvas-light), var(--canvas-light) 10px, #e6e0cd 10px, #e6e0cd 20px); display:flex; align-items:center; justify-content:center; font-size:26px; margin-top:14px;}
+  .db-list-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #EFE9D8; font-size:13px; color:var(--ink);}
+  .db-list-row span.tag{font-family:'JetBrains Mono'; font-size:10.5px; color:#8a8272;}
+  .db-locked-block{margin-top:16px; padding:16px; border-radius:12px; background:var(--canvas-light); text-align:center;}
+  .db-locked-block p{font-size:12.5px; color:#5c5545; margin-bottom:10px;}
+
+  .view-toggle{display:flex; gap:8px; padding:0 20px 12px;}
+  .view-toggle-opt{flex:1; text-align:center; padding:9px; border-radius:10px; border:1.5px solid #E4DDC9; font-family:'Oswald'; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#8a8272; cursor:pointer;}
+  .view-toggle-opt.active{background:var(--pine); border-color:var(--pine); color:var(--paper);}
+
+  .fulldb-item{border:1.5px solid #E4DDC9; border-radius:14px; margin:0 20px 10px; background:var(--paper);}
+  .fulldb-head{display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer;}
+  .fulldb-head .car{margin-left:auto; font-size:12px; color:#8a8272; transition:transform .2s; flex-shrink:0;}
+  .fulldb-item.open .car{transform:rotate(180deg);}
+  .fulldb-body{max-height:0; overflow:hidden; transition:max-height .3s ease;}
+  .fulldb-item.open .fulldb-body{max-height:1000px;}
+  .fulldb-body-inner{padding:0 14px 16px; border-top:1px solid #EFE9D8; margin-top:2px; padding-top:12px;}
+  .fulldb-addr{font-family:'JetBrains Mono'; font-size:11px; color:#8a8272; margin-bottom:8px;}
+  .fulldb-blurb{font-size:12.5px; color:#5c5545; line-height:1.55;}
+  .amenity-tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .amenity-tag{font-family:'JetBrains Mono'; font-size:10px; background:var(--canvas-light); color:var(--ink); padding:5px 9px; border-radius:8px;}
+  .mini-map{height:100px; border-radius:10px; background:var(--canvas-light); position:relative; margin:12px 0; overflow:hidden; border:1px solid #E4DDC9;}
+  .mini-map .pin{position:absolute; font-size:16px; transform:translate(-50%,-100%);}
+  .mini-map .cap{position:absolute; bottom:4px; right:6px; font-family:'JetBrains Mono'; font-size:8.5px; color:#b8ae94;}
+  .site-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:8px;}
+  .site-dot{aspect-ratio:1; border-radius:8px; background:var(--pine); color:var(--canvas-light); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-size:11px; cursor:pointer;}
+  .site-dot.sel{background:var(--rust);}
+  .site-panel{margin-top:12px; padding:12px; border-radius:10px; background:var(--canvas-light);}
+  .site-panel .st{font-family:'Oswald'; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--pine); margin-bottom:8px;}
+  .site-panel textarea{width:100%; border:1.5px solid #E4DDC9; border-radius:8px; padding:9px 10px; font-family:'Inter'; font-size:12.5px; min-height:56px; resize:none; background:var(--paper);}
+  .site-panel .photo-row{margin-top:8px;}
+
+  .map-view-frame{margin:0 20px; height:420px; border-radius:16px; background:var(--canvas-light); border:1.5px solid #E4DDC9; position:relative; overflow:hidden;}
+  .map-view-frame .pin{position:absolute; transform:translate(-50%,-100%); cursor:pointer; text-align:center; font-size:18px;}
+  .map-view-frame .pin span{display:block; font-family:'JetBrains Mono'; font-size:8px; color:var(--pine); background:var(--paper); border-radius:4px; padding:1px 3px; margin-top:2px; white-space:nowrap;}
+  .map-caption{text-align:center; font-size:11px; color:#8a8272; margin:10px 20px 0;}
+
+  .db-progress-wrap{margin:16px 20px 4px; padding:16px; border-radius:14px; color:var(--canvas-light);}
+  .db-progress-wrap .top-row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .db-progress-wrap .prog-title{font-family:'Oswald'; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; opacity:.9;}
+  .db-progress-wrap .pct{font-family:'JetBrains Mono'; font-size:13px; font-weight:700; color:var(--gold);}
+  .db-progress-bar{height:8px; border-radius:6px; background:rgba(255,255,255,.18); overflow:hidden;}
+  .db-progress-fill{height:100%; background:var(--gold); border-radius:6px; transition:width .3s;}
+  .db-check-btn{width:32px; height:32px; border-radius:50%; border:2px solid #cfc6ad; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; background:var(--paper); cursor:pointer; color:var(--pine);}
+  .db-check-btn.done{background:var(--pine); border-color:var(--pine); color:var(--canvas-light);}
+
+  /* ---- Profile ---- */
+  .profile-head{padding:24px 20px; display:flex; align-items:center; gap:14px;}
+  .avatar{width:56px; height:56px; border-radius:50%; background:var(--pine); color:var(--canvas-light); display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-size:20px;}
+  .profile-head b{font-family:'Inter'; font-size:16px; color:var(--ink); display:block;}
+  .avatar-wrap{position:relative; flex-shrink:0;}
+  .avatar-edit{position:absolute; bottom:-2px; right:-2px; width:22px; height:22px; border-radius:50%; background:var(--rust); color:var(--paper); display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; border:2px solid var(--paper);}
+  .profile-name-block{display:flex; flex-direction:column; gap:4px;}
+  .editable-name{font-family:'Inter'; font-size:16px; font-weight:700; color:var(--ink); outline:none; border-bottom:1px dashed transparent; cursor:text; display:inline-block;}
+  .editable-name:focus{border-bottom-color:var(--gold);}
+  .profile-membership-row{margin:14px 20px 0; padding:14px 16px; border-radius:14px; background:var(--canvas-light); display:flex; align-items:center; justify-content:space-between;}
+  .ml-label{font-family:'Oswald'; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:#8a8272;}
+  .ml-value{font-family:'Oswald'; font-size:15px; color:var(--pine); text-transform:uppercase; margin-top:2px;}
+  .diary-item{border:1.5px solid #E4DDC9; border-radius:14px; margin-bottom:10px; overflow:hidden;}
+  .diary-head{display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer;}
+  .diary-head .car{margin-left:auto; font-size:12px; color:#8a8272; transition:transform .2s;}
+  .diary-item.open .car{transform:rotate(180deg);}
+  .diary-body{max-height:0; overflow:hidden; transition:max-height .25s ease; padding:0 14px;}
+  .diary-item.open .diary-body{max-height:260px; padding:0 14px 14px;}
+  .diary-photos{display:flex; gap:8px; margin:10px 0;}
+  .diary-photos div{width:56px; height:56px; border-radius:8px; background:var(--canvas-light); display:flex; align-items:center; justify-content:center; font-size:18px;}
+  .diary-note{font-size:12.5px; color:#5c5545; line-height:1.5; background:var(--canvas-light); border-radius:10px; padding:10px;}
+  .patch-shelf{display:flex; gap:12px; padding:4px 20px 8px; overflow-x:auto;}
+  .patch{
+    width:74px; height:74px; border-radius:50%; flex-shrink:0; border:3px dashed var(--gold);
+    background:var(--pine); color:var(--canvas-light); display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .patch span.yr{font-family:'JetBrains Mono'; font-size:13px; font-weight:700;}
+  .patch span.i{font-size:16px;}
+  .patch.future{border-style:dotted; opacity:.4; color:#8a8272; background:var(--canvas-light);}
+  .demo-switcher{margin:8px 20px 0; padding:14px; border-radius:14px; background:var(--pine-dark); color:var(--canvas-light);}
+  .demo-switcher .h{font-family:'Oswald'; font-size:11px; letter-spacing:.07em; text-transform:uppercase; margin-bottom:10px; opacity:.8;}
+  .demo-opts{display:flex; gap:6px;}
+  .demo-opt{
+    flex:1; text-align:center; padding:8px 4px; border-radius:8px; font-family:'JetBrains Mono'; font-size:10.5px;
+    background:rgba(255,255,255,.08); cursor:pointer; border:1.5px solid transparent;
+  }
+  .demo-opt.active{background:var(--gold); color:#3a2e0e; border-color:var(--gold); font-weight:700;}
+
+  /* ---- Bottom nav ---- */
+  .bottom-nav{
+    position:absolute; bottom:0; left:0; right:0; height:74px; background:var(--paper);
+    border-top:1px solid #E4DDC9; display:flex; align-items:flex-start; padding-top:10px;
+  }
+  .bottom-nav.hide{display:none;}
+  .nav-item{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:#b8ae94;}
+  .nav-item.active{color:var(--rust);}
+  .nav-item svg{width:22px; height:22px;}
+  .nav-item span{font-family:'Oswald'; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase;}
+  .nav-fab{width:44px; height:44px; border-radius:50%; background:var(--rust); display:flex; align-items:center; justify-content:center; margin-top:-26px; box-shadow:0 6px 14px rgba(187,90,46,.4);}
+  .nav-fab svg{width:20px; height:20px; stroke:var(--paper);}
+
+  /* ---- Modal (paywall) ---- */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(20,15,8,.55); display:none;
+    align-items:flex-end; z-index:100;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal-sheet{
+    width:100%; background:var(--paper); border-radius:24px 24px 0 0; padding:24px 22px 28px;
+    max-height:80%; overflow-y:auto;
+  }
+  .modal-sheet h3{font-family:'Oswald'; font-size:20px; color:var(--pine); text-transform:uppercase; text-align:center;}
+  .modal-sheet .close{position:absolute; top:16px; right:20px; font-size:20px; color:#8a8272; cursor:pointer;}
+  .tier-compare{display:flex; flex-direction:column; gap:10px; margin-top:18px;}
+  .tier-box{border:1.5px solid #E4DDC9; border-radius:14px; padding:14px;}
+  .tier-box.reco{border-color:var(--gold); background:var(--canvas-light);}
+  .tier-box .top{display:flex; justify-content:space-between; align-items:center;}
+  .tier-box .name{font-family:'Oswald'; font-size:14px; letter-spacing:.04em; color:var(--pine);}
+  .tier-box .price{font-family:'JetBrains Mono'; font-size:13px; color:var(--rust-dark); font-weight:700;}
+  .tier-box ul{margin:8px 0 10px 18px; font-size:12px; color:#5c5545; line-height:1.6;}
+  .back-hint{text-align:center; font-size:11px; color:#b8ae94; margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="stage-label">TrailStamp — clickable prototype</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="status-bar"><span>9:41</span><span>●●●● 🔋</span></div>
+
+  <!-- WELCOME -->
+  <div class="screen active no-nav" id="screen-welcome">
+    <div class="brand-stamp"><div class="peak">⛰</div><div class="word">TRAILSTAMP</div></div>
+    <h1 class="title">Every Park.<br>One Passport.</h1>
+    <p class="subtitle">Log the campgrounds and parks you've visited, add photos and notes, and earn your stamps along the way.</p>
+    <div class="welcome-actions">
+      <button class="btn btn-primary" onclick="go('home')">Create Account</button>
+      <button class="btn btn-ghost" onclick="go('home')">I already have one — Log In</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="screen-home">
+    <div class="app-bar"><h2>My Trail</h2><span class="tier-pill" id="home-tier-pill">FREE</span></div>
+    <div class="progress-card topo" id="progress-card">
+      <div class="progress-ring" style="--pct:60;"><span id="progress-num">3/5</span></div>
+      <div>
+        <div class="label">Parks logged</div>
+        <div class="sub" id="progress-sub">2 more before you hit your free limit</div>
+      </div>
+    </div>
+    <div class="upgrade-banner" id="upgrade-banner" onclick="openPaywall()">
+      <div class="txt">Unlock <b>unlimited parks</b>, trail maps, and treasure trails.</div>
+      <div class="go">Upgrade →</div>
+    </div>
+    <div class="section-label">Recently logged</div>
+    <div class="park-list" id="park-list"></div>
+  </div>
+
+  <!-- ADD PARK -->
+  <div class="screen" id="screen-add">
+    <div class="app-bar"><h2>Log a Park</h2><span onclick="go('home')" style="cursor:pointer;color:#8a8272;font-size:13px;">Cancel</span></div>
+    <div class="form-wrap">
+      <div class="field">
+        <label>Search Ontario Provincial Parks</label>
+        <input class="db-search" id="add-search-input" placeholder="Start typing a park name…" oninput="filterAddSuggestions(this.value)" onfocus="filterAddSuggestions(this.value)" />
+        <div class="db-suggestions" id="add-suggestions"></div>
+        <div class="db-linked-tag" id="add-linked-tag">✓ Linked to park database</div>
+        <div class="manual-link" onclick="useManualEntry()">Can't find it? Add manually instead</div>
+      </div>
+      <div class="field" id="manual-name-field" style="display:none;"><label>Park / Campground name</label><input id="manual-name-input" placeholder="e.g. Killarney Provincial Park" /></div>
+      <div class="field"><label>Dates stayed</label><input placeholder="Jun 12 – Jun 15, 2026" /></div>
+      <div class="field"><label>Notes</label><textarea placeholder="What made this stop memorable?"></textarea></div>
+      <div class="field">
+        <label>Photos</label>
+        <div class="photo-row">
+          <div class="photo-slot">＋</div><div class="photo-slot">＋</div><div class="photo-slot">＋</div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="toggle-row"><div class="t">Make this entry public</div><div class="switch" id="privacy-switch" onclick="toggleSwitch(this)"><div class="knob"></div></div></div>
+        <div class="locked-note" id="privacy-lock">🔒 Public/private sharing is a Membership feature</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveParkDemo()">Save Entry</button>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="screen" id="screen-detail">
+    <div class="app-bar"><span onclick="go('home')" style="cursor:pointer;color:var(--pine);font-size:18px;">←</span><h2 id="detail-name">Park</h2><span></span></div>
+    <div class="detail-hero" id="detail-hero">🏕️</div>
+    <div class="detail-body">
+      <h3 id="detail-name2">Porcupine Mountains</h3>
+      <div class="meta" id="detail-meta">JUN 12–15, 2026 · MI</div>
+      <div class="gallery"><div>📷</div><div>📷</div><div>📷</div></div>
+      <div class="note-box" id="detail-note">Quiet, foggy mornings by the lake. The Lake Superior overlook trail was the highlight — worth the early start.</div>
+    </div>
+  </div>
+
+  <!-- TRAILS / DISCOVER -->
+  <div class="screen" id="screen-trails">
+    <div class="app-bar"><h2>Discover</h2><span class="tier-pill" id="trails-tier-pill">FREE</span></div>
+    <div class="db-progress-wrap topo">
+      <div class="top-row"><span class="prog-title" id="db-progress-label">0 of 15 Ontario Parks visited</span><span class="pct" id="db-progress-pct">0%</span></div>
+      <div class="db-progress-bar"><div class="db-progress-fill" id="db-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="db-search-wrap"><input class="db-search" id="discover-search-input" placeholder="Search Ontario Provincial Parks…" oninput="renderDatabase(this.value)" /></div>
+    <div class="upgrade-banner" style="margin:0 20px 12px; border-style:solid; border-color:#E4DDC9;" onclick="go('database')">
+      <div class="txt">Browse the <b>full Parks Database</b> — every park, alphabetically, with maps and amenities.</div>
+      <div class="go" style="color:var(--pine);">Open →</div>
+    </div>
+    <div id="db-list"></div>
+    <div class="section-label">Treasure Trails</div>
+    <div id="trail-list"></div>
+    <div class="section-label">Community Fun Guides</div>
+    <div id="guide-list"></div>
+    <div style="height:20px;"></div>
+  </div>
+
+  <!-- PARKS DATABASE (FULL) -->
+  <div class="screen" id="screen-database">
+    <div class="app-bar"><span onclick="go('trails')" style="cursor:pointer;color:var(--pine);font-size:18px;">←</span><h2>Parks Database</h2><span class="tier-pill" id="database-tier-pill">FREE</span></div>
+    <div class="db-search-wrap"><input class="db-search" id="database-search-input" placeholder="Search all Ontario Provincial Parks…" oninput="renderFullDatabase(this.value)" /></div>
+    <div class="view-toggle">
+      <div class="view-toggle-opt active" data-view="list" onclick="setDbView('list')">☰ List</div>
+      <div class="view-toggle-opt" data-view="map" onclick="setDbView('map')">📍 Map</div>
+    </div>
+    <div id="database-list-view"></div>
+    <div id="database-map-view" style="display:none;"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="app-bar"><h2>Profile</h2><span></span></div>
+    <div class="profile-head">
+      <div class="avatar-wrap">
+        <div class="avatar" id="profile-avatar">JR</div>
+        <div class="avatar-edit" onclick="document.getElementById('avatar-file-input').click()">📷</div>
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)" />
+      </div>
+      <div class="profile-name-block">
+        <div class="editable-name" id="profile-name" contenteditable="true" onblur="saveNameEdit()">Jamie R.</div>
+        <span class="tier-pill" id="profile-tier-pill" style="display:inline-block;">FREE</span>
+      </div>
+    </div>
+
+    <div class="profile-membership-row">
+      <div>
+        <div class="ml-label">Membership Level</div>
+        <div class="ml-value" id="profile-tier-name">Free</div>
+      </div>
+      <button class="btn btn-primary" style="width:auto; padding:11px 18px;" onclick="openPaywall()">Upgrade</button>
+    </div>
+
+    <div class="section-label">Progress</div>
+    <div class="db-progress-wrap topo" style="margin-top:0;">
+      <div class="top-row"><span class="prog-title" id="profile-progress-label">0 of 15 Ontario Parks visited</span><span class="pct" id="profile-progress-pct">0%</span></div>
+      <div class="db-progress-bar"><div class="db-progress-fill" id="profile-progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="section-label">Yearly Patches</div>
+    <div class="patch-shelf" id="patch-shelf"></div>
+
+    <div class="section-label">Completed Parks — Camp Diary</div>
+    <div id="diary-list" style="padding:0 20px 12px;"></div>
+
+    <div class="demo-switcher">
+      <div class="h">Prototype control — preview as:</div>
+      <div class="demo-opts">
+        <div class="demo-opt active" data-tier="free" onclick="setTier('free')">Free</div>
+        <div class="demo-opt" data-tier="membership" onclick="setTier('membership')">Membership</div>
+        <div class="demo-opt" data-tier="premium" onclick="setTier('premium')">Premium</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYWALL MODAL -->
+  <div class="modal-overlay" id="paywall-modal">
+    <div class="modal-sheet">
+      <span class="close" onclick="closePaywall()">✕</span>
+      <h3>Choose Your Tier</h3>
+      <div class="tier-compare">
+        <div class="tier-box">
+          <div class="top"><span class="name">FREE</span><span class="price">$0</span></div>
+          <ul><li>Track 3–5 parks</li><li>Photos &amp; notes</li><li>Progress tracker</li></ul>
+        </div>
+        <div class="tier-box reco">
+          <div class="top"><span class="name">MEMBERSHIP</span><span class="price">$4.99/mo</span></div>
+          <ul><li>Unlimited park tracking</li><li>Campsite &amp; trail maps</li><li>Public or private entries</li></ul>
+          <button class="btn btn-primary" onclick="setTier('membership'); closePaywall();">Choose Membership</button>
+        </div>
+        <div class="tier-box">
+          <div class="top"><span class="name">PREMIUM</span><span class="price">$8.99/mo</span></div>
+          <ul><li>Everything in Membership</li><li>Treasure trails included</li><li>Choose your fun guides</li><li>Yearly member patch</li></ul>
+          <button class="btn btn-ghost" onclick="setTier('premium'); closePaywall();">Choose Premium</button>
+        </div>
+      </div>
+      <div class="back-hint">This is a prototype — no payment is processed.</div>
+    </div>
+  </div>
+
+  <!-- PARK DATABASE DETAIL MODAL -->
+  <div class="modal-overlay" id="db-detail-modal">
+    <div class="modal-sheet">
+      <span class="close" onclick="closeDbDetail()">✕</span>
+      <div class="db-detail-body">
+        <h3 id="db-detail-name">Algonquin Provincial Park</h3>
+        <div class="loc" id="db-detail-loc">NEAR HUNTSVILLE, ON</div>
+        <p class="desc" id="db-detail-desc"></p>
+        <div class="db-map-box">🗺️</div>
+        <div id="db-detail-gated"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav" id="bottom-nav">
+    <div class="nav-item active" data-screen="home" onclick="go('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" data-screen="trails" onclick="go('trails')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7l2 5-2 5-2-5z"/></svg>
+      <span>Discover</span>
+    </div>
+    <div class="nav-fab" onclick="go('add')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+    <div class="nav-item" data-screen="profile" onclick="go('profile')" style="margin-left:0;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span>Profile</span>
+    </div>
+  </div>
+</div>
+
+<script>
+let tier = 'free';
+const FREE_CAP = 5;
+const parkDatabase = [
+  {icon:'🏕️', name:'Algonquin Provincial Park', loc:'NEAR HUNTSVILLE, ON', address:'Hwy 60, Nipissing, ON', coord:{x:185,y:150}, desc:"Ontario's oldest provincial park — vast interior canoe routes, old-growth forest, and iconic fall colour along Highway 60.", campsites:8, trails:6, visited:true, amenities:['Flush toilets','Showers','Canoe rental','Firewood for sale','Visitor centre','Pet friendly']},
+  {icon:'🌲', name:'Killarney Provincial Park', loc:'NEAR SUDBURY, ON', address:'David Loch Rd, Killarney, ON', coord:{x:150,y:100}, desc:"Rugged white quartzite ridges (the La Cloche range) above turquoise lakes made famous by the Group of Seven.", campsites:5, trails:4, visited:true, amenities:['Vault toilets','Drinking water','Canoe launch','Backcountry permits','Pet friendly']},
+  {icon:'⛺', name:'Bon Echo Provincial Park', loc:'NEAR CLOYNE, ON', address:'Bon Echo Rd, Cloyne, ON', coord:{x:200,y:165}, desc:"Home to Mazinaw Rock, a 100-metre cliff rising straight from the lake, covered in Indigenous pictographs.", campsites:6, trails:3, visited:true, amenities:['Flush toilets','Showers','Boat launch','Store','Pet friendly']},
+  {icon:'🏖️', name:'Sandbanks Provincial Park', loc:'PRINCE EDWARD COUNTY, ON', address:'Sandbanks Dr, Picton, ON', coord:{x:250,y:190}, desc:"Some of the largest freshwater sand dunes in the world, backed by warm, shallow Lake Ontario beaches.", campsites:7, trails:3, visited:false, amenities:['Flush toilets','Showers','Beach access','Store','Bike rental']},
+  {icon:'🌲', name:'Pinery Provincial Park', loc:'NEAR GRAND BEND, ON', address:'9526 Lakeshore Rd, Grand Bend, ON', coord:{x:90,y:210}, desc:"Rare oak savanna ecosystem along Lake Huron, with one of the best sunset beaches in the province.", campsites:6, trails:5, visited:false, amenities:['Flush toilets','Showers','Bike rental','Store','Visitor centre']},
+  {icon:'🏖️', name:"Presqu'ile Provincial Park", loc:'NEAR BRIGHTON, ON', address:'328 Presqu\'ile Pkwy, Brighton, ON', coord:{x:230,y:205}, desc:"A limestone peninsula on Lake Ontario known for birdwatching, a historic lighthouse, and marshland trails.", campsites:4, trails:4, visited:false, amenities:['Flush toilets','Showers','Boat launch','Birding centre']},
+  {icon:'🛶', name:'Frontenac Provincial Park', loc:'NEAR KINGSTON, ON', address:'6700 Salmon Lake Rd, Sydenham, ON', coord:{x:225,y:175}, desc:"A backcountry park of rugged Canadian Shield terrain, accessible only on foot or by canoe — no drive-in camping.", campsites:3, trails:5, visited:false, amenities:['Vault toilets','Backcountry permits','Canoe launch']},
+  {icon:'🏕️', name:'MacGregor Point Provincial Park', loc:'NEAR PORT ELGIN, ON', address:'1593 Bruce Rd 33, Port Elgin, ON', coord:{x:100,y:195}, desc:"Lake Huron shoreline park known for its wetland boardwalks and one of the best birding festivals in Ontario.", campsites:5, trails:4, visited:false, amenities:['Flush toilets','Showers','Boardwalk','Store','Pet friendly']},
+  {icon:'⛺', name:'Awenda Provincial Park', loc:'NEAR PENETANGUISHENE, ON', address:'670 Awenda Park Rd, Penetanguishene, ON', coord:{x:150,y:140}, desc:"Georgian Bay shoreline and old-growth forest at the tip of the Penetanguishene Peninsula.", campsites:5, trails:5, visited:false, amenities:['Flush toilets','Showers','Beach access','Store','Pet friendly']},
+  {icon:'🌲', name:'Rondeau Provincial Park', loc:'NEAR CHATHAM-KENT, ON', address:'18965 Rondeau Park Rd, Morpeth, ON', coord:{x:70,y:250}, desc:"A rare Carolinian forest on a sandy Lake Erie cape, home to species found nowhere else in Canada.", campsites:4, trails:4, visited:false, amenities:['Flush toilets','Showers','Bike rental','Visitor centre']},
+  {icon:'🏞️', name:'Bronte Creek Provincial Park', loc:'NEAR OAKVILLE, ON', address:'1219 Burloak Dr, Oakville, ON', coord:{x:150,y:230}, desc:"A GTA-area park with deep wooded ravines, a working farm, and family-friendly trails close to the city.", campsites:2, trails:3, visited:false, amenities:['Flush toilets','Splash pad','Farm exhibit','Pet friendly']},
+  {icon:'🛶', name:'Sibbald Point Provincial Park', loc:'NEAR SUTTON, ON', address:'26071 Park Rd, Sutton West, ON', coord:{x:170,y:190}, desc:"A Lake Simcoe beach park and historic pioneer cemetery, popular for swimming and sailing.", campsites:4, trails:2, visited:false, amenities:['Flush toilets','Showers','Beach access','Boat launch']},
+  {icon:'🌲', name:'Grundy Lake Provincial Park', loc:'NEAR PARRY SOUND, ON', address:'22 Trout Lake Rd, Britt, ON', coord:{x:130,y:110}, desc:"Rolling granite ridges and warm shallow lakes on the edge of the Near North, close to Georgian Bay.", campsites:5, trails:3, visited:false, amenities:['Vault toilets','Showers','Canoe rental','Store']},
+  {icon:'🏕️', name:'Silent Lake Provincial Park', loc:'NEAR BANCROFT, ON', address:'1938 Silent Lake Rd, Bancroft, ON', coord:{x:205,y:155}, desc:"A no-motors lake in the quiet Kawartha Highlands, popular for canoeing and a rugged backpacking loop.", campsites:3, trails:3, visited:false, amenities:['Flush toilets','Showers','Canoe rental','Backcountry permits']},
+  {icon:'⛺', name:'Arrowhead Provincial Park', loc:'NEAR HUNTSVILLE, ON', address:'451 Arrowhead Park Rd, Huntsville, ON', coord:{x:185,y:130}, desc:"A four-season park near Algonquin, known for its lit night skating trail and maple-forest hiking.", campsites:4, trails:4, visited:false, amenities:['Flush toilets','Showers','Skating trail','Store','Pet friendly']},
+];
+let addSelected = null;
+const trails = [
+  {icon:'🗺️', name:"Ridgeline Riddle", desc:"A 4-mile clue hunt along the eastern ridge — five checkpoints, one final marker.", clues:"5 CHECKPOINTS · PREMIUM"},
+  {icon:'🧭', name:"Hollow Creek Hunt", desc:"Follow the creek bed clues to an overlook few hikers ever find.", clues:"4 CHECKPOINTS · PREMIUM"},
+  {icon:'🔦', name:"Night Owl Trail", desc:"A dusk scavenger hunt built around nocturnal wildlife sightings.", clues:"6 CHECKPOINTS · PREMIUM"},
+];
+const guides = [
+  {t:"Best Sunset Overlooks", theme:"Photography", picked:false},
+  {t:"Kid-Friendly Loop Trails", theme:"Family", picked:true},
+  {t:"Quietest Backcountry Sites", theme:"Solitude", picked:false},
+];
+
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.screen===screen));
+  const nav = document.getElementById('bottom-nav');
+  nav.classList.toggle('hide', screen==='welcome');
+  if(screen==='home') renderHome();
+  if(screen==='trails') renderTrails();
+  if(screen==='profile') renderProfile();
+  if(screen==='database') renderFullDatabase(document.getElementById('database-search-input') ? document.getElementById('database-search-input').value : '');
+}
+
+function openDetail(p){
+  document.getElementById('detail-hero').textContent = p.icon;
+  document.getElementById('detail-name').textContent = p.name;
+  document.getElementById('detail-name2').textContent = p.name;
+  document.getElementById('detail-meta').textContent = p.loc;
+  document.getElementById('detail-note').textContent = p.desc;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-detail').classList.add('active');
+  document.getElementById('bottom-nav').classList.remove('hide');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+}
+
+function visitedCount(){ return parkDatabase.filter(p=>p.visited).length; }
+function totalCount(){ return parkDatabase.length; }
+
+function updateProgressBar(){
+  const total = totalCount(), visited = visitedCount();
+  const pct = Math.round((visited/total)*100);
+  const lbl = document.getElementById('db-progress-label');
+  const pctEl = document.getElementById('db-progress-pct');
+  const fill = document.getElementById('db-progress-fill');
+  if(lbl) lbl.textContent = visited+' of '+total+' Ontario Parks visited';
+  if(pctEl) pctEl.textContent = pct+'%';
+  if(fill) fill.style.width = pct+'%';
+}
+
+function renderDatabase(filterText){
+  updateProgressBar();
+  const listEl = document.getElementById('db-list');
+  if(!listEl) return;
+  const q = (filterText||'').toLowerCase();
+  const filtered = parkDatabase.filter(p=>p.name.toLowerCase().includes(q));
+  listEl.innerHTML = '';
+  if(filtered.length===0){ listEl.innerHTML = '<div class="db-empty">No parks match that search.</div>'; return; }
+  filtered.forEach(p=>{
+    const idx = parkDatabase.indexOf(p);
+    const el = document.createElement('div');
+    el.className = 'db-card';
+    el.innerHTML = `<div class="db-icon">${p.icon}</div>
+      <div style="flex:1;" onclick="openDbDetail(${idx})"><b>${p.name}</b><div class="loc">${p.loc}</div><div class="counts">${p.campsites} campsites · ${p.trails} trails</div></div>
+      <div class="db-check-btn ${p.visited?'done':''}" onclick="toggleVisited(${idx}, event)">${p.visited?'✓':''}</div>`;
+    listEl.appendChild(el);
+  });
+}
+
+function toggleVisited(idx, ev){
+  ev.stopPropagation();
+  const p = parkDatabase[idx];
+  if(!p.visited && tier==='free' && visitedCount()>=FREE_CAP){ openPaywall(); return; }
+  p.visited = !p.visited;
+  const searchInput = document.getElementById('discover-search-input');
+  renderDatabase(searchInput ? searchInput.value : '');
+  renderHome();
+}
+
+function openDbDetail(idx){
+  const p = parkDatabase[idx];
+  document.getElementById('db-detail-name').textContent = p.name;
+  document.getElementById('db-detail-loc').textContent = p.loc;
+  document.getElementById('db-detail-desc').textContent = p.desc;
+  const gated = document.getElementById('db-detail-gated');
+  if(tier==='free'){
+    gated.innerHTML = `<div class="db-locked-block"><p>Campsite details and trail listings unlock with Membership.</p><button class="btn btn-primary" onclick="closeDbDetail(); openPaywall();">See Membership</button></div>`;
+  } else {
+    let rows = '<div class="section-label" style="margin:16px 0 6px;">Campsites</div>';
+    for(let i=0;i<Math.min(p.campsites,4);i++){ rows += `<div class="db-list-row">Site ${i+1}<span class="tag">${i%2===0?'ELECTRICAL':'NON-ELECTRICAL'}</span></div>`; }
+    rows += '<div class="section-label" style="margin:16px 0 6px;">Trails</div>';
+    for(let i=0;i<Math.min(p.trails,4);i++){ rows += `<div class="db-list-row">Trail ${i+1}<span class="tag">${2+i} KM</span></div>`; }
+    gated.innerHTML = rows;
+  }
+  document.getElementById('db-detail-modal').classList.add('active');
+}
+function closeDbDetail(){ document.getElementById('db-detail-modal').classList.remove('active'); }
+
+let dbView = 'list';
+let selectedSite = {};
+
+function renderFullDatabase(filterText){
+  const pill = document.getElementById('database-tier-pill');
+  if(pill){ pill.textContent = tierLabel(); pill.className = 'tier-pill ' + tierClass(); }
+  const q = (filterText||'').toLowerCase();
+  const sorted = [...parkDatabase].sort((a,b)=>a.name.localeCompare(b.name));
+  const filtered = sorted.filter(p=>p.name.toLowerCase().includes(q));
+  const listView = document.getElementById('database-list-view');
+  if(!listView) return;
+  listView.innerHTML = '';
+  if(filtered.length===0){ listView.innerHTML = '<div class="db-empty">No parks match that search.</div>'; return; }
+  filtered.forEach(p=>{
+    const idx = parkDatabase.indexOf(p);
+    const item = document.createElement('div');
+    item.className = 'fulldb-item';
+    item.id = 'fulldb-'+idx;
+    const isPaid = tier!=='free';
+    let paidBlock;
+    if(isPaid){
+      let sites = '';
+      for(let i=1;i<=p.campsites;i++){
+        sites += `<div class="site-dot" onclick="selectSite(${idx}, ${i}, event)">${i}</div>`;
+      }
+      paidBlock = `<div class="section-label" style="margin:14px 0 4px;">Site Map — tap a site</div><div class="site-grid">${sites}</div><div id="site-panel-${idx}"></div>`;
+    } else {
+      paidBlock = `<div class="db-locked-block"><p>Membership unlocks the clickable site map with per-site notes and photos.</p><button class="btn btn-primary" onclick="openPaywall()">See Membership</button></div>`;
+    }
+    item.innerHTML = `
+      <div class="fulldb-head" onclick="toggleFulldbItem(${idx})">
+        <div class="db-icon">${p.icon}</div>
+        <div><b style="font-family:'Inter';font-size:13.5px;color:var(--ink);display:block;">${p.name}</b><div class="loc" style="font-family:'JetBrains Mono';font-size:10.5px;color:#8a8272;">${p.loc}</div></div>
+        <span class="car">▾</span>
+      </div>
+      <div class="fulldb-body">
+        <div class="fulldb-body-inner">
+          <div class="fulldb-addr">${p.address}</div>
+          <div class="mini-map">${miniMapSvg(p)}<span class="cap">Approx. location</span></div>
+          <p class="fulldb-blurb">${p.desc}</p>
+          <div class="amenity-tags">${p.amenities.map(a=>`<span class="amenity-tag">${a}</span>`).join('')}</div>
+          ${paidBlock}
+        </div>
+      </div>`;
+    listView.appendChild(item);
+  });
+}
+
+function miniMapSvg(p){
+  return `<svg width="100%" height="100%" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">
+    <path d="M40,40 L260,30 L270,120 L230,180 L240,260 L120,270 L60,220 L30,140 Z" fill="none" stroke="#c9c1a4" stroke-width="2"/>
+    <circle cx="${p.coord.x}" cy="${p.coord.y}" r="6" fill="#BB5A2E"/>
+  </svg>`;
+}
+
+function toggleFulldbItem(idx){
+  const el = document.getElementById('fulldb-'+idx);
+  document.querySelectorAll('.fulldb-item').forEach(i=>{ if(i!==el) i.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+function selectSite(parkIdx, siteNum, ev){
+  ev.stopPropagation();
+  selectedSite[parkIdx] = siteNum;
+  document.querySelectorAll(`#fulldb-${parkIdx} .site-dot`).forEach((d,i)=>d.classList.toggle('sel', i+1===siteNum));
+  const panel = document.getElementById('site-panel-'+parkIdx);
+  panel.innerHTML = `<div class="site-panel">
+    <div class="st">Site ${siteNum}</div>
+    <textarea placeholder="Notes about this site…"></textarea>
+    <div class="photo-row"><div class="photo-slot">＋</div><div class="photo-slot">＋</div></div>
+  </div>`;
+}
+
+function setDbView(view){
+  dbView = view;
+  document.querySelectorAll('.view-toggle-opt').forEach(o=>o.classList.toggle('active', o.dataset.view===view));
+  document.getElementById('database-list-view').style.display = view==='list' ? 'block' : 'none';
+  document.getElementById('database-map-view').style.display = view==='map' ? 'block' : 'none';
+  if(view==='map') renderMapView();
+}
+
+function renderMapView(){
+  const wrap = document.getElementById('database-map-view');
+  const pins = parkDatabase.map((p,idx)=>{
+    const xPct = (p.coord.x/300*100).toFixed(1);
+    const yPct = (p.coord.y/300*100).toFixed(1);
+    return `<div class="pin" style="left:${xPct}%; top:${yPct}%;" onclick="jumpToPark(${idx})">📍<span>${p.name.replace(' Provincial Park','')}</span></div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="map-view-frame">
+      <svg width="100%" height="100%" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0;">
+        <path d="M40,40 L260,30 L270,120 L230,180 L240,260 L120,270 L60,220 L30,140 Z" fill="none" stroke="#c9c1a4" stroke-width="2"/>
+      </svg>
+      ${pins}
+    </div>
+    <div class="map-caption">Pin placement is illustrative, not exact GPS — tap a pin to open that park</div>`;
+}
+
+function jumpToPark(idx){
+  setDbView('list');
+  document.querySelectorAll('.view-toggle-opt').forEach(o=>o.classList.toggle('active', o.dataset.view==='list'));
+  const search = document.getElementById('database-search-input');
+  if(search) search.value = '';
+  renderFullDatabase('');
+  setTimeout(()=>{
+    const el = document.getElementById('fulldb-'+idx);
+    if(el){ el.classList.add('open'); el.scrollIntoView({behavior:'smooth', block:'start'}); }
+  }, 30);
+}
+
+function filterAddSuggestions(val){
+  const box = document.getElementById('add-suggestions');
+  const q = (val||'').toLowerCase();
+  if(!q){ box.classList.remove('show'); box.innerHTML=''; return; }
+  const matches = parkDatabase.filter(p=>p.name.toLowerCase().includes(q)).slice(0,5);
+  if(matches.length===0){ box.classList.remove('show'); box.innerHTML=''; return; }
+  box.innerHTML = matches.map(p=>`<div class="db-suggestion-item" onclick="selectAddSuggestion('${p.name.replace(/'/g,"\\'")}')"><b>${p.name}</b><span class="loc">${p.loc}</span></div>`).join('');
+  box.classList.add('show');
+}
+function selectAddSuggestion(name){
+  addSelected = parkDatabase.find(p=>p.name===name);
+  document.getElementById('add-search-input').value = name;
+  document.getElementById('add-suggestions').classList.remove('show');
+  document.getElementById('add-linked-tag').classList.add('show');
+}
+function useManualEntry(){
+  document.getElementById('manual-name-field').style.display = 'block';
+  addSelected = null;
+  document.getElementById('add-linked-tag').classList.remove('show');
+}
+
+function tierLabel(){ return tier==='free' ? 'FREE' : tier==='membership' ? 'MEMBERSHIP' : 'PREMIUM'; }
+function tierClass(){ return 'tier-'+tier; }
+
+function renderHome(){
+  const pill = document.getElementById('home-tier-pill');
+  pill.textContent = tierLabel(); pill.className = 'tier-pill ' + tierClass();
+  const total = totalCount(), visited = visitedCount();
+  const cap = tier==='free' ? FREE_CAP : total;
+  const shown = Math.min(visited, cap);
+  document.getElementById('progress-num').textContent = shown+'/'+cap;
+  document.querySelector('#progress-card .progress-ring').style.setProperty('--pct', (shown/cap*100));
+  document.getElementById('progress-sub').textContent = tier==='free'
+    ? Math.max(0, cap-visited)+' more before you hit your free limit'
+    : (total-visited)+' left to complete every Ontario Provincial Park';
+  document.getElementById('upgrade-banner').style.display = tier==='free' ? 'flex' : 'none';
+
+  const list = document.getElementById('park-list');
+  list.innerHTML = '';
+  const visitedParks = parkDatabase.filter(p=>p.visited);
+  if(visitedParks.length===0){
+    list.innerHTML = '<div class="db-empty">No parks logged yet — tap ＋ to check one off.</div>';
+    return;
+  }
+  visitedParks.forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'park-card';
+    el.onclick = ()=>openDetail(p);
+    el.innerHTML = `<div class="park-stamp">${p.icon}</div>
+      <div class="park-info"><b>${p.name}</b><span>${p.loc}</span></div>
+      <div class="park-flags"></div>`;
+    list.appendChild(el);
+  });
+}
+
+function renderTrails(){
+  const pill = document.getElementById('trails-tier-pill');
+  pill.textContent = tierLabel(); pill.className = 'tier-pill ' + tierClass();
+  renderDatabase(document.getElementById('discover-search-input') ? document.getElementById('discover-search-input').value : '');
+  const tList = document.getElementById('trail-list');
+  tList.innerHTML = '';
+  trails.forEach(t=>{
+    const locked = tier!=='premium';
+    const el = document.createElement('div');
+    el.className = 'trail-card' + (locked ? ' locked' : '');
+    el.onclick = locked ? openPaywall : null;
+    el.innerHTML = `<div class="trail-icon">${t.icon}</div>
+      <div><b>${t.name}</b><div class="desc">${t.desc}</div><div class="clues">${t.clues}</div></div>`;
+    tList.appendChild(el);
+  });
+  const gList = document.getElementById('guide-list');
+  gList.innerHTML = '';
+  guides.forEach((g,i)=>{
+    const locked = tier!=='premium';
+    const el = document.createElement('div');
+    el.className = 'guide-card';
+    el.innerHTML = `<div><div class="t">${g.t}</div><div class="theme">${g.theme}</div></div>
+      <button class="pick-btn ${g.picked && !locked ? 'picked':''}" ${locked?'disabled':''} onclick="pickGuide(${i}, event)">${locked?'🔒':(g.picked?'Selected':'Select')}</button>`;
+    gList.appendChild(el);
+  });
+}
+
+function pickGuide(i, ev){
+  ev.stopPropagation();
+  guides[i].picked = !guides[i].picked;
+  renderTrails();
+}
+
+function renderProfile(){
+  const pill = document.getElementById('profile-tier-pill');
+  pill.textContent = tierLabel(); pill.className = 'tier-pill ' + tierClass();
+  document.getElementById('profile-tier-name').textContent = tier==='free' ? 'Free' : tier==='membership' ? 'Membership' : 'Premium';
+
+  const total = totalCount(), visited = visitedCount();
+  const pct = Math.round((visited/total)*100);
+  document.getElementById('profile-progress-label').textContent = visited+' of '+total+' Ontario Parks visited';
+  document.getElementById('profile-progress-pct').textContent = pct+'%';
+  document.getElementById('profile-progress-fill').style.width = pct+'%';
+
+  const shelf = document.getElementById('patch-shelf');
+  shelf.innerHTML = '';
+  const years = [2024,2025,2026];
+  years.forEach(y=>{
+    const earned = tier==='premium' && y===2026;
+    const el = document.createElement('div');
+    el.className = 'patch' + (earned ? '' : ' future');
+    el.innerHTML = `<span class="i">${earned?'🏅':'—'}</span><span class="yr">${y}</span>`;
+    shelf.appendChild(el);
+  });
+  document.querySelectorAll('.demo-opt').forEach(o=>o.classList.toggle('active', o.dataset.tier===tier));
+
+  const diary = document.getElementById('diary-list');
+  diary.innerHTML = '';
+  const visitedParks = parkDatabase.filter(p=>p.visited);
+  if(visitedParks.length===0){
+    diary.innerHTML = '<div class="db-empty">Check off a park to start your camp diary.</div>';
+    return;
+  }
+  visitedParks.forEach(p=>{
+    const item = document.createElement('div');
+    item.className = 'diary-item';
+    item.innerHTML = `
+      <div class="diary-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="park-stamp" style="width:38px;height:38px;font-size:16px;">${p.icon}</div>
+        <div><b style="font-family:'Inter';font-size:13.5px;color:var(--ink);display:block;">${p.name}</b><div style="font-size:11px;color:#8a8272;font-family:'JetBrains Mono';">${p.loc}</div></div>
+        <span class="car">▾</span>
+      </div>
+      <div class="diary-body">
+        <div class="diary-photos"><div>📷</div><div>📷</div><div>＋</div></div>
+        <div class="diary-note">${p.desc}</div>
+      </div>`;
+    diary.appendChild(item);
+  });
+}
+
+function handleAvatarUpload(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const avatar = document.getElementById('profile-avatar');
+    avatar.style.backgroundImage = `url(${e.target.result})`;
+    avatar.style.backgroundSize = 'cover';
+    avatar.style.backgroundPosition = 'center';
+    avatar.textContent = '';
+  };
+  reader.readAsDataURL(file);
+}
+function saveNameEdit(){
+  const el = document.getElementById('profile-name');
+  if(el.textContent.trim()===''){ el.textContent = 'Jamie R.'; }
+}
+
+function setTier(t){
+  tier = t;
+  const activeScreen = document.querySelector('.screen.active').id;
+  if(activeScreen==='screen-home') renderHome();
+  if(activeScreen==='screen-trails') renderTrails();
+  if(activeScreen==='screen-profile') renderProfile();
+  if(activeScreen==='screen-database') renderFullDatabase(document.getElementById('database-search-input') ? document.getElementById('database-search-input').value : '');
+}
+
+function toggleSwitch(el){
+  if(tier==='free'){ return; }
+  el.classList.toggle('on');
+}
+document.getElementById('privacy-lock').style.display = 'none';
+(function(){
+  const lock = document.getElementById('privacy-lock');
+  const sw = document.getElementById('privacy-switch');
+  const obs = ()=>{ lock.style.display = tier==='free' ? 'flex' : 'none'; sw.style.opacity = tier==='free' ? .4 : 1; };
+  obs();
+  const origSetTier = setTier;
+  setTier = function(t){ origSetTier(t); obs(); };
+})();
+
+function saveParkDemo(){
+  if(addSelected){
+    if(!addSelected.visited && tier==='free' && visitedCount()>=FREE_CAP){ openPaywall(); return; }
+    addSelected.visited = true;
+  }
+  addSelected = null;
+  const input = document.getElementById('add-search-input');
+  if(input) input.value = '';
+  const sugg = document.getElementById('add-suggestions');
+  if(sugg){ sugg.innerHTML=''; sugg.classList.remove('show'); }
+  document.getElementById('add-linked-tag').classList.remove('show');
+  document.getElementById('manual-name-field').style.display = 'none';
+  go('home');
+}
+
+function openPaywall(){ document.getElementById('paywall-modal').classList.add('active'); }
+function closePaywall(){ document.getElementById('paywall-modal').classList.remove('active'); }
+
+renderHome();
+</script>
+</body>
+</html>
