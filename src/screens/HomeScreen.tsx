@@ -1,4 +1,4 @@
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { ProgressRing } from '../components/ProgressRing';
 import { TierPill } from '../components/TierPill';
 import { VisitedParkRow } from '../components/VisitedParkRow';
 import { useAuth } from '../context/AuthContext';
+import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
 import { getParkByIdSync, totalParkCount } from '../services/parks';
 import { FREE_TIER_PARK_CAP } from '../constants';
@@ -21,6 +22,7 @@ type Props = CompositeScreenProps<
 
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
+  const { openPaywall } = usePaywall();
   const { visits, distinctVisitedCount } = useVisits();
   const tier = profile?.tier ?? 'free';
 
@@ -63,12 +65,7 @@ export function HomeScreen({ navigation }: Props) {
             </View>
 
             {tier === 'free' && (
-              <Text
-                style={styles.upgradeBanner}
-                onPress={() =>
-                  Alert.alert('Coming soon', 'The upgrade flow is being built in a later stage.')
-                }
-              >
+              <Text style={styles.upgradeBanner} onPress={openPaywall}>
                 <Text style={styles.upgradeText}>
                   Unlock <Text style={styles.upgradeBold}>unlimited parks</Text>, trail maps, and treasure trails.{' '}
                 </Text>

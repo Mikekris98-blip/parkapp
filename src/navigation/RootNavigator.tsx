@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { PaywallProvider } from '../context/PaywallContext';
 import { colors } from '../theme/theme';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
@@ -16,5 +17,15 @@ export function RootNavigator() {
     );
   }
 
-  return <NavigationContainer>{firebaseUser ? <AppNavigator /> : <AuthNavigator />}</NavigationContainer>;
+  return (
+    <NavigationContainer>
+      {firebaseUser ? (
+        <PaywallProvider>
+          <AppNavigator />
+        </PaywallProvider>
+      ) : (
+        <AuthNavigator />
+      )}
+    </NavigationContainer>
+  );
 }

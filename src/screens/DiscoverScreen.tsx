@@ -8,6 +8,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
 import { TrailCard } from '../components/TrailCard';
 import { useAuth } from '../context/AuthContext';
+import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
 import { seedGuides } from '../data/guides';
 import { seedTrails } from '../data/trails';
@@ -20,6 +21,7 @@ import type { Park } from '../types/models';
 // see src/data/trails.ts and guides.ts.
 export function DiscoverScreen() {
   const { profile } = useAuth();
+  const { openPaywall } = usePaywall();
   const { distinctVisitedCount } = useVisits();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Park[]>([]);
@@ -32,10 +34,6 @@ export function DiscoverScreen() {
   useEffect(() => {
     searchParks(query).then(setResults);
   }, [query]);
-
-  function openLockedPaywall() {
-    Alert.alert('Coming soon', 'The upgrade flow is being built in a later stage.');
-  }
 
   function toggleGuide(id: string) {
     setPickedGuideIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
@@ -86,7 +84,7 @@ export function DiscoverScreen() {
           <>
             <Text style={styles.sectionLabel}>Treasure Trails</Text>
             {seedTrails.map((trail) => (
-              <TrailCard key={trail.id} trail={trail} locked={!isPremium} onPress={openLockedPaywall} />
+              <TrailCard key={trail.id} trail={trail} locked={!isPremium} onPress={openPaywall} />
             ))}
 
             <Text style={styles.sectionLabel}>Community Fun Guides</Text>

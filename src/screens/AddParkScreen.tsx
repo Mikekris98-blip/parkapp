@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../components/Button';
 import { FormField } from '../components/FormField';
 import { useAuth } from '../context/AuthContext';
+import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
 import { searchParks } from '../services/parks';
 import { createVisit } from '../services/visits';
@@ -27,6 +28,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'AddPark'>;
 
 export function AddParkScreen({ navigation }: Props) {
   const { firebaseUser, profile } = useAuth();
+  const { openPaywall } = usePaywall();
   const { distinctVisitedCount, distinctParkKeys } = useVisits();
   const tier = profile?.tier ?? 'free';
 
@@ -74,10 +76,7 @@ export function AddParkScreen({ navigation }: Props) {
 
     const isNewPark = !distinctParkKeys.has(parkKey);
     if (tier === 'free' && isNewPark && distinctVisitedCount >= FREE_TIER_PARK_CAP) {
-      Alert.alert(
-        "You've hit your free limit",
-        `Free accounts can track up to ${FREE_TIER_PARK_CAP} parks. Upgrade to log more.`
-      );
+      openPaywall();
       return;
     }
 

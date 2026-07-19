@@ -1,5 +1,6 @@
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
+import { usePaywall } from '../context/PaywallContext';
 import { colors, fonts, radii, type MembershipTier } from '../theme/theme';
 import type { Park } from '../types/models';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function ParkDetailModal({ park, tier, onClose }: Props) {
+  const { openPaywall } = usePaywall();
   const visible = park !== null;
   const isPaid = tier !== 'free';
 
@@ -63,7 +65,10 @@ export function ParkDetailModal({ park, tier, onClose }: Props) {
                   <Text style={styles.lockedText}>Campsite details and trail listings unlock with Membership.</Text>
                   <Button
                     title="See Membership"
-                    onPress={() => Alert.alert('Coming soon', 'The upgrade flow is being built in a later stage.')}
+                    onPress={() => {
+                      onClose();
+                      openPaywall();
+                    }}
                   />
                 </View>
               )}

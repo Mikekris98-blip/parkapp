@@ -7,6 +7,7 @@ import { PatchShelf } from '../components/PatchShelf';
 import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
 import { useAuth } from '../context/AuthContext';
+import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
 import { pickAndUploadImage } from '../services/photos';
 import { setUserTier } from '../services/users';
@@ -17,6 +18,7 @@ const TIERS: MembershipTier[] = ['free', 'membership', 'premium'];
 
 export function ProfileScreen() {
   const { profile, firebaseUser, logOut, refreshProfile, updateDisplayName, updateAvatarUrl } = useAuth();
+  const { openPaywall } = usePaywall();
   const { visits, distinctVisitedCount } = useVisits();
   const tier = profile?.tier ?? 'free';
   const total = totalParkCount();
@@ -112,11 +114,7 @@ export function ProfileScreen() {
             <Text style={styles.mlLabel}>Membership Level</Text>
             <Text style={styles.mlValue}>{tier}</Text>
           </View>
-          <Button
-            title="Upgrade"
-            onPress={() => Alert.alert('Coming soon', 'The upgrade flow is being built in a later stage.')}
-            style={styles.upgradeBtn}
-          />
+          <Button title="Upgrade" onPress={openPaywall} style={styles.upgradeBtn} />
         </View>
 
         <Text style={styles.sectionLabel}>Progress</Text>
