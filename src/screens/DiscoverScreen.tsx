@@ -1,27 +1,45 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GuideCard } from '../components/GuideCard';
 import { ParkCard } from '../components/ParkCard';
 import { ParkDetailModal } from '../components/ParkDetailModal';
+import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
+import { TrailCard } from '../components/TrailCard';
 import { useAuth } from '../context/AuthContext';
-import { searchParks } from '../services/parks';
+import { useVisits } from '../hooks/useVisits';
+import { seedGuides } from '../data/guides';
+import { seedTrails } from '../data/trails';
+import { searchParks, totalParkCount } from '../services/parks';
 import { colors, fonts, radii } from '../theme/theme';
 import type { Park } from '../types/models';
 
-// Stage 4 scope: search + browse the sample park set. The progress bar,
-// Treasure Trails, and Community Fun Guides sections are added in Stage 6;
-// the full alphabetical/map-toggle database screen is Stage 8.
+// The full alphabetical/map-toggle database screen is Stage 8. Treasure
+// Trails / Community Fun Guides use placeholder admin-curated content —
+// see src/data/trails.ts and guides.ts.
 export function DiscoverScreen() {
   const { profile } = useAuth();
+  const { distinctVisitedCount } = useVisits();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Park[]>([]);
   const [selectedPark, setSelectedPark] = useState<Park | null>(null);
+  const [pickedGuideIds, setPickedGuideIds] = useState<string[]>([]);
   const tier = profile?.tier ?? 'free';
+  const isPremium = tier === 'premium';
+  const total = totalParkCount();
 
   useEffect(() => {
     searchParks(query).then(setResults);
   }, [query]);
+
+  function openLockedPaywall() {
+    Alert.alert('Coming soon', 'The upgrade flow is being built in a later stage.');
+  }
+
+  function toggleGuide(id: string) {
+    setPickedGuideIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -30,25 +48,59 @@ export function DiscoverScreen() {
         <TierPill tier={tier} />
       </View>
 
-      <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.search}
-          placeholder="Search Ontario Provincial Parks…"
-          placeholderTextColor={colors.mutedLight}
-          value={query}
-          onChangeText={setQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-
       <FlatList
         data={results}
         keyExtractor={(p) => p.id}
         renderItem={({ item }) => <ParkCard park={item} onPress={() => setSelectedPark(item)} />}
-        ListEmptyComponent={<Text style={styles.empty}>No parks match that search.</Text>}
-        contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <ProgressBar label={`${distinctVisitedCount} of ${total} Ontario Parks visited`} pct={(distinctVisitedCount / total) * 100} />
+
+            <View style={styles.searchWrap}>
+              <TextInput
+                style={styles.search}
+                placeholder="Search Ontario Provincial Parks…"
+                placeholderTextColor={colors.mutedLight}
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <Pressable
+              style={styles.fullDbBanner}
+              onPress={() => Alert.alert('Coming soon', 'The full alphabetical Parks Database with map view arrives in a later stage.')}
+            >
+              <Text style={styles.fullDbText}>
+                Browse the <Text style={styles.fullDbBold}>full Parks Database</Text> — every park, alphabetically, with maps and amenities.
+              </Text>
+              <Text style={styles.fullDbGo}>Open →</Text>
+            </Pressable>
+          </>
+        }
+        ListEmptyComponent={<Text style={styles.empty}>No parks match that search.</Text>}
+        ListFooterComponent={
+          <>
+            <Text style={styles.sectionLabel}>Treasure Trails</Text>
+            {seedTrails.map((trail) => (
+              <TrailCard key={trail.id} trail={trail} locked={!isPremium} onPress={openLockedPaywall} />
+            ))}
+
+            <Text style={styles.sectionLabel}>Community Fun Guides</Text>
+            {seedGuides.map((guide) => (
+              <GuideCard
+                key={guide.id}
+                guide={guide}
+                locked={!isPremium}
+                picked={pickedGuideIds.includes(guide.id)}
+                onToggle={() => toggleGuide(guide.id)}
+              />
+            ))}
+          </>
+        }
       />
 
       <ParkDetailModal park={selectedPark} tier={tier} onClose={() => setSelectedPark(null)} />
@@ -92,6 +144,46 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: colors.ink,
     backgroundColor: colors.canvasLight,
+  },
+  fullDbBanner: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: radii.lg,
+    backgroundColor: colors.paper,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  fullDbText: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 12.5,
+    color: colors.ink,
+    lineHeight: 18,
+  },
+  fullDbBold: {
+    fontFamily: fonts.bodyBold,
+  },
+  fullDbGo: {
+    fontFamily: fonts.display,
+    fontSize: 11,
+    color: colors.pine,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  sectionLabel: {
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.muted,
+    marginHorizontal: 20,
+    marginTop: 22,
+    marginBottom: 10,
   },
   listContent: {
     paddingTop: 6,
