@@ -4,7 +4,13 @@ export type AuthStackParamList = {
   Login: undefined;
 };
 
+export type MainTabParamList = {
+  Home: undefined;
+  Discover: undefined;
+  Profile: undefined;
+};
+
 export type AppStackParamList = {
-  HomePlaceholder: undefined;
-  ParkDatabase: undefined;
+  MainTabs: undefined;
+  AddPark: undefined;
 };

@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ParkCard } from '../components/ParkCard';
 import { ParkDetailModal } from '../components/ParkDetailModal';
 import { TierPill } from '../components/TierPill';
 import { useAuth } from '../context/AuthContext';
 import { searchParks } from '../services/parks';
 import { colors, fonts, radii } from '../theme/theme';
-import type { AppStackParamList } from '../navigation/types';
 import type { Park } from '../types/models';
 
-type Props = NativeStackScreenProps<AppStackParamList, 'ParkDatabase'>;
-
-export function ParkDatabaseScreen({ navigation }: Props) {
+// Stage 4 scope: search + browse the sample park set. The progress bar,
+// Treasure Trails, and Community Fun Guides sections are added in Stage 6;
+// the full alphabetical/map-toggle database screen is Stage 8.
+export function DiscoverScreen() {
   const { profile } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Park[]>([]);
@@ -27,10 +26,7 @@ export function ParkDatabaseScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.appBar}>
-        <Text style={styles.back} onPress={() => navigation.goBack()}>
-          ←
-        </Text>
-        <Text style={styles.title}>Parks Database</Text>
+        <Text style={styles.title}>Discover</Text>
         <TierPill tier={tier} />
       </View>
 
@@ -71,16 +67,11 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  back: {
-    fontSize: 18,
-    color: colors.pine,
-  },
   title: {
-    flex: 1,
     fontFamily: fonts.display,
     fontSize: 19,
     color: colors.pine,
