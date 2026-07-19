@@ -7,6 +7,7 @@ import { initializeAuth, getReactNativePersistence, getAuth, type Auth } from '@
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Values come from a project-level .env file (see .env.example) using Expo's
 // EXPO_PUBLIC_ prefix so they're inlined at build time. Fill these in with
@@ -34,13 +35,21 @@ export let storage: FirebaseStorage | undefined;
 if (isFirebaseConfigured) {
   firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-  try {
-    auth = initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  } catch {
-    // initializeAuth throws if called twice (e.g. Fast Refresh) — fall back to getAuth.
+  if (Platform.OS === 'web') {
+    // getReactNativePersistence has no working implementation under Metro's
+    // web bundle (only under the "react-native" platform condition) — the
+    // browser build's default IndexedDB/localStorage persistence is correct
+    // for web anyway, so just use getAuth there.
     auth = getAuth(firebaseApp);
+  } else {
+    try {
+      auth = initializeAuth(firebaseApp, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+    } catch {
+      // initializeAuth throws if called twice (e.g. Fast Refresh) — fall back to getAuth.
+      auth = getAuth(firebaseApp);
+    }
   }
 
   db = getFirestore(firebaseApp);
