@@ -22,3 +22,13 @@ export async function setUserTier(uid: string, tier: MembershipTier): Promise<vo
   if (!db) throw new Error('Firestore is not configured.');
   await updateDoc(doc(db, 'users', uid), { tier });
 }
+
+export async function updateUserDisplayName(uid: string, displayName: string): Promise<void> {
+  if (!db) throw new Error('Firestore is not configured.');
+  await updateDoc(doc(db, 'users', uid), { displayName });
+}
+
+export async function updateUserPhoto(uid: string, photoUrl: string): Promise<void> {
+  if (!db) throw new Error('Firestore is not configured.');
+  await updateDoc(doc(db, 'users', uid), { photoUrl });
+}

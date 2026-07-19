@@ -1,5 +1,8 @@
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProgressRing } from '../components/ProgressRing';
 import { TierPill } from '../components/TierPill';
 import { VisitedParkRow } from '../components/VisitedParkRow';
@@ -8,9 +11,15 @@ import { useVisits } from '../hooks/useVisits';
 import { getParkByIdSync, totalParkCount } from '../services/parks';
 import { FREE_TIER_PARK_CAP } from '../constants';
 import { colors, fonts, radii } from '../theme/theme';
+import type { AppStackParamList, MainTabParamList } from '../navigation/types';
 import type { Visit } from '../types/models';
 
-export function HomeScreen() {
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Home'>,
+  NativeStackScreenProps<AppStackParamList>
+>;
+
+export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const { visits, distinctVisitedCount } = useVisits();
   const tier = profile?.tier ?? 'free';
@@ -77,7 +86,7 @@ export function HomeScreen() {
               icon={d.icon}
               name={d.name}
               loc={d.loc}
-              onPress={() => Alert.alert('Coming soon', 'Full park detail (photos, notes) arrives in Stage 5.')}
+              onPress={() => navigation.getParent()?.navigate('ParkDetail', { visit: item })}
             />
           );
         }}

@@ -1,4 +1,4 @@
-import { addDoc, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Visit } from '../types/models';
 
@@ -11,6 +11,11 @@ export async function createVisit(input: NewVisit): Promise<string> {
     createdAt: new Date().toISOString(),
   });
   return ref.id;
+}
+
+export async function addPhotoToVisit(visitId: string, photoUrl: string): Promise<void> {
+  if (!db) throw new Error('Firestore is not configured.');
+  await updateDoc(doc(db, 'visits', visitId), { photoUrls: arrayUnion(photoUrl) });
 }
 
 // Sorts client-side rather than using orderBy in the query, to avoid

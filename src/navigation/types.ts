@@ -1,3 +1,5 @@
+import type { Visit } from '../types/models';
+
 export type AuthStackParamList = {
   Welcome: undefined;
   SignUp: undefined;
@@ -13,4 +15,5 @@ export type MainTabParamList = {
 export type AppStackParamList = {
   MainTabs: undefined;
   AddPark: undefined;
+  ParkDetail: { visit: Visit };
 };

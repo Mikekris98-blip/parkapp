@@ -8,7 +8,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../services/firebase';
-import { createUserProfile, getUserProfile } from '../services/users';
+import { createUserProfile, getUserProfile, updateUserDisplayName, updateUserPhoto } from '../services/users';
 import type { AppUser } from '../types/models';
 
 interface AuthContextValue {
@@ -19,6 +19,8 @@ interface AuthContextValue {
   logIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
+  updateAvatarUrl: (url: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -70,8 +72,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(existing);
   }
 
+  async function updateDisplayName(name: string) {
+    if (!firebaseUser) return;
+    await updateUserDisplayName(firebaseUser.uid, name);
+    await updateProfile(firebaseUser, { displayName: name });
+    await refreshProfile();
+  }
+
+  async function updateAvatarUrl(url: string) {
+    if (!firebaseUser) return;
+    await updateUserPhoto(firebaseUser.uid, url);
+    await updateProfile(firebaseUser, { photoURL: url });
+    await refreshProfile();
+  }
+
   return (
-    <AuthContext.Provider value={{ firebaseUser, profile, initializing, signUp, logIn, logOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        firebaseUser,
+        profile,
+        initializing,
+        signUp,
+        logIn,
+        logOut,
+        refreshProfile,
+        updateDisplayName,
+        updateAvatarUrl,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
