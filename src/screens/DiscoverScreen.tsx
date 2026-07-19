@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { GuideCard } from '../components/GuideCard';
 import { ParkCard } from '../components/ParkCard';
 import { ParkDetailModal } from '../components/ParkDetailModal';
@@ -14,12 +17,17 @@ import { seedGuides } from '../data/guides';
 import { seedTrails } from '../data/trails';
 import { searchParks, totalParkCount } from '../services/parks';
 import { colors, fonts, radii } from '../theme/theme';
+import type { AppStackParamList, MainTabParamList } from '../navigation/types';
 import type { Park } from '../types/models';
 
-// The full alphabetical/map-toggle database screen is Stage 8. Treasure
-// Trails / Community Fun Guides use placeholder admin-curated content —
-// see src/data/trails.ts and guides.ts.
-export function DiscoverScreen() {
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Discover'>,
+  NativeStackScreenProps<AppStackParamList>
+>;
+
+// Treasure Trails / Community Fun Guides use placeholder admin-curated
+// content — see src/data/trails.ts and guides.ts.
+export function DiscoverScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const { openPaywall } = usePaywall();
   const { distinctVisitedCount } = useVisits();
@@ -70,7 +78,7 @@ export function DiscoverScreen() {
 
             <Pressable
               style={styles.fullDbBanner}
-              onPress={() => Alert.alert('Coming soon', 'The full alphabetical Parks Database with map view arrives in a later stage.')}
+              onPress={() => navigation.getParent()?.navigate('FullParksDatabase')}
             >
               <Text style={styles.fullDbText}>
                 Browse the <Text style={styles.fullDbBold}>full Parks Database</Text> — every park, alphabetically, with maps and amenities.

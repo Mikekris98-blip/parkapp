@@ -16,4 +16,5 @@ export type AppStackParamList = {
   MainTabs: undefined;
   AddPark: undefined;
   ParkDetail: { visit: Visit };
+  FullParksDatabase: undefined;
 };
