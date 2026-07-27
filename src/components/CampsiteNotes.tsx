@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, fonts, radii } from '../theme/theme';
 import { addSiteNotePhoto, getSiteNote, saveSiteNoteText } from '../services/siteNotes';
 import { pickAndUploadImage } from '../services/photos';
+import { useAlert } from '../context/AlertContext';
 
 interface Props {
   userId: string;
@@ -14,6 +15,7 @@ interface Props {
 // notes and photos — a real Firestore-backed feature per the Stage 1 data
 // model (SiteNote), unlike the prototype's inert demo textarea.
 export function CampsiteNotes({ userId, parkId, campsiteCount }: Props) {
+  const { showAlert } = useAlert();
   const [selectedSite, setSelectedSite] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
@@ -48,7 +50,7 @@ export function CampsiteNotes({ userId, parkId, campsiteCount }: Props) {
     try {
       await saveSiteNoteText(userId, parkId, selectedSite, notes);
     } catch {
-      Alert.alert('Could not save note', 'Please try again.');
+      showAlert('Could not save note', 'Please try again.');
     }
   }
 
@@ -62,7 +64,7 @@ export function CampsiteNotes({ userId, parkId, campsiteCount }: Props) {
         setPhotoUrls((prev) => [...prev, url]);
       }
     } catch {
-      Alert.alert('Upload failed', 'Could not upload that photo. Please try again.');
+      showAlert('Upload failed', 'Could not upload that photo. Please try again.');
     } finally {
       setUploading(false);
     }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../components/Button';
 import { FormField } from '../components/FormField';
+import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
@@ -27,6 +27,7 @@ import type { Park } from '../types/models';
 type Props = NativeStackScreenProps<AppStackParamList, 'AddPark'>;
 
 export function AddParkScreen({ navigation }: Props) {
+  const { showAlert } = useAlert();
   const { firebaseUser, profile } = useAuth();
   const { openPaywall } = usePaywall();
   const { distinctVisitedCount, distinctParkKeys } = useVisits();
@@ -70,7 +71,7 @@ export function AddParkScreen({ navigation }: Props) {
 
     const parkKey = selectedPark ? selectedPark.id : manualMode ? `manual:${manualName.trim()}` : null;
     if (!parkKey || (manualMode && !manualName.trim())) {
-      Alert.alert('Pick a park', 'Search and select a park, or add one manually.');
+      showAlert('Pick a park', 'Search and select a park, or add one manually.');
       return;
     }
 
@@ -93,7 +94,7 @@ export function AddParkScreen({ navigation }: Props) {
       });
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Something went wrong', 'Could not save this entry. Please try again.');
+      showAlert('Something went wrong', 'Could not save this entry. Please try again.');
     } finally {
       setSaving(false);
     }

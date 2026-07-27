@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { getParkByIdSync } from '../services/parks';
 import { pickAndUploadImage } from '../services/photos';
@@ -12,6 +13,7 @@ import type { AppStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AppStackParamList, 'ParkDetail'>;
 
 export function ParkDetailScreen({ route, navigation }: Props) {
+  const { showAlert } = useAlert();
   const { visit } = route.params;
   const { firebaseUser } = useAuth();
   const park = visit.parkId ? getParkByIdSync(visit.parkId) : undefined;
@@ -32,7 +34,7 @@ export function ParkDetailScreen({ route, navigation }: Props) {
         setPhotoUrls((prev) => [...prev, url]);
       }
     } catch (e) {
-      Alert.alert('Upload failed', 'Could not upload that photo. Please try again.');
+      showAlert('Upload failed', 'Could not upload that photo. Please try again.');
     } finally {
       setUploading(false);
     }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { CampDiary } from '../components/CampDiary';
 import { PatchShelf } from '../components/PatchShelf';
 import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
+import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
@@ -17,6 +18,7 @@ import { colors, fonts, radii, type MembershipTier } from '../theme/theme';
 const TIERS: MembershipTier[] = ['free', 'membership', 'premium'];
 
 export function ProfileScreen() {
+  const { showAlert } = useAlert();
   const { profile, firebaseUser, logOut, refreshProfile, updateDisplayName, updateAvatarUrl } = useAuth();
   const { openPaywall } = usePaywall();
   const { visits, distinctVisitedCount } = useVisits();
@@ -40,7 +42,7 @@ export function ProfileScreen() {
     try {
       await updateDisplayName(trimmed);
     } catch {
-      Alert.alert('Could not save name', 'Please try again.');
+      showAlert('Could not save name', 'Please try again.');
     }
   }
 
@@ -51,7 +53,7 @@ export function ProfileScreen() {
       const url = await pickAndUploadImage(`avatars/${firebaseUser.uid}.jpg`);
       if (url) await updateAvatarUrl(url);
     } catch {
-      Alert.alert('Upload failed', 'Could not upload that photo. Please try again.');
+      showAlert('Upload failed', 'Could not upload that photo. Please try again.');
     } finally {
       setUploadingAvatar(false);
     }
