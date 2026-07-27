@@ -5,10 +5,11 @@ interface Props {
   icon: string;
   name: string;
   loc: string;
+  dates?: string;
   onPress: () => void;
 }
 
-export function VisitedParkRow({ icon, name, loc, onPress }: Props) {
+export function VisitedParkRow({ icon, name, loc, dates, onPress }: Props) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.stamp}>
@@ -17,6 +18,7 @@ export function VisitedParkRow({ icon, name, loc, onPress }: Props) {
       <View style={styles.info}>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.loc}>{loc}</Text>
+        {dates ? <Text style={styles.dates}>{dates}</Text> : null}
       </View>
     </Pressable>
   );
@@ -65,5 +67,11 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: colors.muted,
     marginTop: 2,
+  },
+  dates: {
+    fontFamily: fonts.mono,
+    fontSize: 10.5,
+    color: colors.rustDark,
+    marginTop: 3,
   },
 });

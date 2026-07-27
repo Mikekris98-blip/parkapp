@@ -83,6 +83,7 @@ export function HomeScreen({ navigation }: Props) {
               icon={d.icon}
               name={d.name}
               loc={d.loc}
+              dates={item.dates}
               onPress={() => navigation.getParent()?.navigate('ParkDetail', { visit: item })}
             />
           );
