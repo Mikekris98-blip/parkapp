@@ -17,6 +17,11 @@ export function WelcomeScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>
           Log the campgrounds and parks you've visited, add photos and notes, and earn your stamps along the way.
         </Text>
+        {/* TEMP DEBUG — remove once sign-up is confirmed working */}
+        <Text selectable style={styles.debug}>
+          DEBUG apiKey: "{process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '(undefined)'}"{'\n'}
+          length: {(process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '').length}
+        </Text>
       </View>
       <View style={styles.actions}>
         <Button title="Create Account" onPress={() => navigation.navigate('SignUp')} />
@@ -58,6 +63,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 260,
+  },
+  debug: {
+    marginTop: 16,
+    padding: 10,
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    color: colors.danger,
+    backgroundColor: '#fff0f0',
+    borderRadius: 8,
+    textAlign: 'left',
   },
   actions: {
     width: '100%',
