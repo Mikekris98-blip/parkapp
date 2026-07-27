@@ -86,7 +86,7 @@ export function AddParkScreen({ navigation }: Props) {
       await createVisit({
         userId: firebaseUser.uid,
         parkId: selectedPark ? selectedPark.id : null,
-        manualParkName: manualMode ? manualName.trim() : undefined,
+        ...(manualMode ? { manualParkName: manualName.trim() } : {}),
         dates,
         notes,
         photoUrls: [],
