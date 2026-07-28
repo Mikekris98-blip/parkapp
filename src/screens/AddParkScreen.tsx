@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,12 +18,15 @@ import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
+import { pickAndUploadImage } from '../services/photos';
 import { searchParks } from '../services/parks';
 import { createVisit } from '../services/visits';
 import { FREE_TIER_PARK_CAP } from '../constants';
 import { colors, fonts, radii } from '../theme/theme';
 import type { AppStackParamList } from '../navigation/types';
 import type { Park } from '../types/models';
+
+const MAX_PHOTOS = 3;
 
 type Props = NativeStackScreenProps<AppStackParamList, 'AddPark'>;
 
@@ -42,6 +46,8 @@ export function AddParkScreen({ navigation }: Props) {
   const [notes, setNotes] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   async function handleSearchChange(text: string) {
     setSearchText(text);
@@ -64,6 +70,19 @@ export function AddParkScreen({ navigation }: Props) {
     setManualMode(true);
     setSelectedPark(null);
     setSuggestions([]);
+  }
+
+  async function handleAddPhoto() {
+    if (!firebaseUser) return;
+    setUploadingPhoto(true);
+    try {
+      const url = await pickAndUploadImage(`visits/${firebaseUser.uid}/pending/${Date.now()}.jpg`);
+      if (url) setPhotoUrls((prev) => [...prev, url]);
+    } catch {
+      showAlert('Upload failed', 'Could not upload that photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   async function handleSave() {
@@ -89,7 +108,7 @@ export function AddParkScreen({ navigation }: Props) {
         ...(manualMode ? { manualParkName: manualName.trim() } : {}),
         dates,
         notes,
-        photoUrls: [],
+        photoUrls,
         isPublic: tier === 'free' ? false : isPublic,
       });
       navigation.goBack();
@@ -160,11 +179,14 @@ export function AddParkScreen({ navigation }: Props) {
           <View style={styles.field}>
             <Text style={styles.label}>Photos</Text>
             <View style={styles.photoRow}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={styles.photoSlot}>
-                  <Text style={styles.photoPlus}>＋</Text>
-                </View>
+              {photoUrls.map((url) => (
+                <Image key={url} source={{ uri: url }} style={styles.photoThumb} />
               ))}
+              {photoUrls.length < MAX_PHOTOS && (
+                <Pressable style={styles.photoSlot} onPress={handleAddPhoto} disabled={uploadingPhoto}>
+                  <Text style={styles.photoPlus}>{uploadingPhoto ? '…' : '＋'}</Text>
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -298,6 +320,12 @@ const styles = StyleSheet.create({
   photoPlus: {
     fontSize: 20,
     color: colors.mutedLight,
+  },
+  photoThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.md,
+    backgroundColor: colors.canvasLight,
   },
   toggleRow: {
     flexDirection: 'row',
