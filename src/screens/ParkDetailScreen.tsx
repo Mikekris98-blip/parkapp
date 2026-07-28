@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { PhotoViewerModal } from '../components/PhotoViewerModal';
 import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { getParkByIdSync } from '../services/parks';
@@ -20,6 +21,7 @@ export function ParkDetailScreen({ route, navigation }: Props) {
   const [photoUrls, setPhotoUrls] = useState(visit.photoUrls);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   const name = park?.name ?? visit.manualParkName ?? 'Unnamed park';
   const loc = park?.loc ?? 'MANUAL ENTRY';
@@ -86,7 +88,9 @@ export function ParkDetailScreen({ route, navigation }: Props) {
 
           <View style={styles.gallery}>
             {photoUrls.map((url) => (
-              <Image key={url} source={{ uri: url }} style={styles.photo} />
+              <Pressable key={url} onPress={() => setViewingPhoto(url)}>
+                <Image source={{ uri: url }} style={styles.photo} />
+              </Pressable>
             ))}
             <Pressable style={styles.addPhoto} onPress={handleAddPhoto} disabled={uploading}>
               <Text style={styles.addPhotoText}>{uploading ? '…' : '＋'}</Text>
@@ -100,6 +104,7 @@ export function ParkDetailScreen({ route, navigation }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+      <PhotoViewerModal photoUrl={viewingPhoto} onDismiss={() => setViewingPhoto(null)} />
     </SafeAreaView>
   );
 }

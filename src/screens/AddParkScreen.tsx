@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../components/Button';
 import { FormField } from '../components/FormField';
+import { PhotoViewerModal } from '../components/PhotoViewerModal';
 import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
@@ -48,6 +49,7 @@ export function AddParkScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   async function handleSearchChange(text: string) {
     setSearchText(text);
@@ -180,7 +182,9 @@ export function AddParkScreen({ navigation }: Props) {
             <Text style={styles.label}>Photos</Text>
             <View style={styles.photoRow}>
               {photoUrls.map((url) => (
-                <Image key={url} source={{ uri: url }} style={styles.photoThumb} />
+                <Pressable key={url} onPress={() => setViewingPhoto(url)}>
+                  <Image source={{ uri: url }} style={styles.photoThumb} />
+                </Pressable>
               ))}
               {photoUrls.length < MAX_PHOTOS && (
                 <Pressable style={styles.photoSlot} onPress={handleAddPhoto} disabled={uploadingPhoto}>
@@ -206,6 +210,7 @@ export function AddParkScreen({ navigation }: Props) {
           <Button title="Save Entry" onPress={handleSave} loading={saving} />
         </ScrollView>
       </KeyboardAvoidingView>
+      <PhotoViewerModal photoUrl={viewingPhoto} onDismiss={() => setViewingPhoto(null)} />
     </SafeAreaView>
   );
 }
