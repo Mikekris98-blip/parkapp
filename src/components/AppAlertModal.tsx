@@ -6,9 +6,14 @@ interface Props {
   title: string;
   message: string;
   onDismiss: () => void;
+  confirmLabel?: string;
+  onConfirm?: () => void;
+  destructive?: boolean;
 }
 
-export function AppAlertModal({ visible, title, message, onDismiss }: Props) {
+export function AppAlertModal({ visible, title, message, onDismiss, confirmLabel, onConfirm, destructive }: Props) {
+  const isConfirm = Boolean(onConfirm);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
@@ -16,9 +21,24 @@ export function AppAlertModal({ visible, title, message, onDismiss }: Props) {
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          <Pressable style={styles.button} onPress={onDismiss}>
-            <Text style={styles.buttonText}>OK</Text>
-          </Pressable>
+
+          {isConfirm ? (
+            <View style={styles.buttonRow}>
+              <Pressable style={[styles.button, styles.buttonGhost]} onPress={onDismiss}>
+                <Text style={[styles.buttonText, styles.buttonTextGhost]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.button, styles.buttonHalf, destructive && styles.buttonDanger]}
+                onPress={onConfirm}
+              >
+                <Text style={styles.buttonText}>{confirmLabel ?? 'Confirm'}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.button} onPress={onDismiss}>
+              <Text style={styles.buttonText}>OK</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>
@@ -55,12 +75,31 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 10,
   },
-  button: {
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
     marginTop: 18,
+  },
+  button: {
     backgroundColor: colors.rust,
     borderRadius: radii.md,
     paddingVertical: 12,
     alignItems: 'center',
+    marginTop: 18,
+  },
+  buttonHalf: {
+    flex: 1,
+    marginTop: 0,
+  },
+  buttonGhost: {
+    flex: 1,
+    marginTop: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  buttonDanger: {
+    backgroundColor: colors.danger,
   },
   buttonText: {
     fontFamily: fonts.display,
@@ -68,5 +107,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: colors.paper,
+  },
+  buttonTextGhost: {
+    color: colors.muted,
   },
 });

@@ -6,19 +6,20 @@ import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { getParkByIdSync } from '../services/parks';
 import { pickAndUploadImage } from '../services/photos';
-import { addPhotoToVisit } from '../services/visits';
+import { addPhotoToVisit, deleteVisit } from '../services/visits';
 import { colors, fonts, radii } from '../theme/theme';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ParkDetail'>;
 
 export function ParkDetailScreen({ route, navigation }: Props) {
-  const { showAlert } = useAlert();
+  const { showAlert, showConfirm } = useAlert();
   const { visit } = route.params;
   const { firebaseUser } = useAuth();
   const park = visit.parkId ? getParkByIdSync(visit.parkId) : undefined;
   const [photoUrls, setPhotoUrls] = useState(visit.photoUrls);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const name = park?.name ?? visit.manualParkName ?? 'Unnamed park';
   const loc = park?.loc ?? 'MANUAL ENTRY';
@@ -37,6 +38,27 @@ export function ParkDetailScreen({ route, navigation }: Props) {
       showAlert('Upload failed', 'Could not upload that photo. Please try again.');
     } finally {
       setUploading(false);
+    }
+  }
+
+  function handleDeletePress() {
+    showConfirm(
+      'Remove this entry?',
+      `This will remove ${name} from your logged parks. This can't be undone.`,
+      'Remove',
+      handleDeleteConfirmed,
+      true
+    );
+  }
+
+  async function handleDeleteConfirmed() {
+    setDeleting(true);
+    try {
+      await deleteVisit(visit.id, photoUrls);
+      navigation.goBack();
+    } catch (e) {
+      showAlert('Something went wrong', 'Could not remove this entry. Please try again.');
+      setDeleting(false);
     }
   }
 
@@ -72,6 +94,10 @@ export function ParkDetailScreen({ route, navigation }: Props) {
           </View>
 
           {visit.notes ? <Text style={styles.note}>{visit.notes}</Text> : null}
+
+          <Pressable style={styles.deleteButton} onPress={handleDeletePress} disabled={deleting}>
+            <Text style={styles.deleteButtonText}>{deleting ? 'Removing…' : 'Remove Entry'}</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -165,5 +191,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.canvasLight,
     borderRadius: radii.lg,
     padding: 14,
+  },
+  deleteButton: {
+    marginTop: 22,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+  },
+  deleteButtonText: {
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.danger,
   },
 });
