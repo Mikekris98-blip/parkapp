@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { CampDiary } from '../components/CampDiary';
+import { CamperBadgeShelf } from '../components/CamperBadgeShelf';
 import { PatchShelf } from '../components/PatchShelf';
 import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
@@ -10,6 +11,7 @@ import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
+import { computeEarnedBadges } from '../services/badges';
 import { pickAndUploadImage } from '../services/photos';
 import { setUserTier } from '../services/users';
 import { totalParkCount } from '../services/parks';
@@ -25,6 +27,7 @@ export function ProfileScreen() {
   const tier = profile?.tier ?? 'free';
   const total = totalParkCount();
   const pct = total > 0 ? (distinctVisitedCount / total) * 100 : 0;
+  const earnedBadges = useMemo(() => computeEarnedBadges(visits), [visits]);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile?.displayName ?? '');
@@ -124,6 +127,13 @@ export function ProfileScreen() {
 
         <Text style={styles.sectionLabel}>Yearly Patches</Text>
         <PatchShelf tier={tier} />
+
+        {tier !== 'free' && (
+          <>
+            <Text style={styles.sectionLabel}>Camper Badges</Text>
+            <CamperBadgeShelf earned={earnedBadges} />
+          </>
+        )}
 
         <Text style={styles.sectionLabel}>Completed Parks — Camp Diary</Text>
         <View style={styles.diaryWrap}>
