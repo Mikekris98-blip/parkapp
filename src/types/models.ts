@@ -13,6 +13,12 @@ export interface Park {
   trailCount: number;
 }
 
+export interface PremiumPicks {
+  year: number;
+  trailIds: string[];
+  guideIds: string[];
+}
+
 export interface AppUser {
   id: string;
   displayName: string;
@@ -21,6 +27,11 @@ export interface AppUser {
   tier: MembershipTier;
   renewalDate?: string;
   shippingAddress?: string;
+  // Individually purchased ($5 each) — permanent, independent of tier.
+  purchasedTrailIds?: string[];
+  purchasedGuideIds?: string[];
+  // Premium's 2-free-per-year Treasure Trail / Fun Guide allowance, reset each calendar year.
+  premiumPicks?: PremiumPicks;
 }
 
 export interface Visit {

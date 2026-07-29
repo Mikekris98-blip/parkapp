@@ -10,12 +10,21 @@ import { ParkDetailModal } from '../components/ParkDetailModal';
 import { ProgressBar } from '../components/ProgressBar';
 import { TierPill } from '../components/TierPill';
 import { TrailCard } from '../components/TrailCard';
+import { UnlockItemModal } from '../components/UnlockItemModal';
+import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaywall } from '../context/PaywallContext';
 import { useVisits } from '../hooks/useVisits';
 import { seedGuides } from '../data/guides';
 import { seedTrails } from '../data/trails';
+import {
+  isGuideUnlocked,
+  isTrailUnlocked,
+  remainingFreeGuidePicks,
+  remainingFreeTrailPicks,
+} from '../services/entitlements';
 import { searchParks, totalParkCount } from '../services/parks';
+import { addPremiumGuidePick, addPremiumTrailPick, purchaseGuide, purchaseTrail } from '../services/users';
 import { colors, fonts, radii } from '../theme/theme';
 import type { AppStackParamList, MainTabParamList } from '../navigation/types';
 import type { Park } from '../types/models';
@@ -25,26 +34,77 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<AppStackParamList>
 >;
 
+interface UnlockTarget {
+  kind: 'trail' | 'guide';
+  id: string;
+  name: string;
+}
+
 // Treasure Trails / Community Fun Guides use placeholder admin-curated
 // content — see src/data/trails.ts and guides.ts.
 export function DiscoverScreen({ navigation }: Props) {
-  const { profile } = useAuth();
+  const { showAlert } = useAlert();
+  const { profile, firebaseUser, refreshProfile } = useAuth();
   const { openPaywall } = usePaywall();
   const { distinctVisitedCount } = useVisits();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Park[]>([]);
   const [selectedPark, setSelectedPark] = useState<Park | null>(null);
-  const [pickedGuideIds, setPickedGuideIds] = useState<string[]>([]);
+  const [unlockTarget, setUnlockTarget] = useState<UnlockTarget | null>(null);
   const tier = profile?.tier ?? 'free';
-  const isPremium = tier === 'premium';
   const total = totalParkCount();
 
   useEffect(() => {
     searchParks(query).then(setResults);
   }, [query]);
 
-  function toggleGuide(id: string) {
-    setPickedGuideIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+  function handleTrailPress(id: string, name: string) {
+    if (isTrailUnlocked(profile, id)) return;
+    setUnlockTarget({ kind: 'trail', id, name });
+  }
+
+  function handleGuidePress(id: string, title: string) {
+    if (isGuideUnlocked(profile, id)) return;
+    setUnlockTarget({ kind: 'guide', id, name: title });
+  }
+
+  function closeUnlockModal() {
+    setUnlockTarget(null);
+  }
+
+  function handleUpgrade() {
+    closeUnlockModal();
+    openPaywall();
+  }
+
+  async function handleUseFreePick() {
+    if (!firebaseUser || !unlockTarget) return;
+    try {
+      if (unlockTarget.kind === 'trail') {
+        await addPremiumTrailPick(firebaseUser.uid, unlockTarget.id, profile?.premiumPicks);
+      } else {
+        await addPremiumGuidePick(firebaseUser.uid, unlockTarget.id, profile?.premiumPicks);
+      }
+      await refreshProfile();
+      closeUnlockModal();
+    } catch {
+      showAlert('Something went wrong', 'Could not unlock that right now. Please try again.');
+    }
+  }
+
+  async function handlePurchase() {
+    if (!firebaseUser || !unlockTarget) return;
+    try {
+      if (unlockTarget.kind === 'trail') {
+        await purchaseTrail(firebaseUser.uid, unlockTarget.id);
+      } else {
+        await purchaseGuide(firebaseUser.uid, unlockTarget.id);
+      }
+      await refreshProfile();
+      closeUnlockModal();
+    } catch {
+      showAlert('Something went wrong', 'Could not complete that purchase. Please try again.');
+    }
   }
 
   return (
@@ -92,7 +152,12 @@ export function DiscoverScreen({ navigation }: Props) {
           <>
             <Text style={styles.sectionLabel}>Treasure Trails</Text>
             {seedTrails.map((trail) => (
-              <TrailCard key={trail.id} trail={trail} locked={!isPremium} onPress={openPaywall} />
+              <TrailCard
+                key={trail.id}
+                trail={trail}
+                locked={!isTrailUnlocked(profile, trail.id)}
+                onPress={() => handleTrailPress(trail.id, trail.name)}
+              />
             ))}
 
             <Text style={styles.sectionLabel}>Community Fun Guides</Text>
@@ -100,9 +165,8 @@ export function DiscoverScreen({ navigation }: Props) {
               <GuideCard
                 key={guide.id}
                 guide={guide}
-                locked={!isPremium}
-                picked={pickedGuideIds.includes(guide.id)}
-                onToggle={() => toggleGuide(guide.id)}
+                unlocked={isGuideUnlocked(profile, guide.id)}
+                onPress={() => handleGuidePress(guide.id, guide.title)}
               />
             ))}
           </>
@@ -110,6 +174,22 @@ export function DiscoverScreen({ navigation }: Props) {
       />
 
       <ParkDetailModal park={selectedPark} tier={tier} onClose={() => setSelectedPark(null)} />
+
+      {unlockTarget && (
+        <UnlockItemModal
+          visible={Boolean(unlockTarget)}
+          itemName={unlockTarget.name}
+          itemKindLabel={unlockTarget.kind === 'trail' ? 'Treasure Trail' : 'Fun Guide'}
+          tier={tier}
+          remainingFreePicks={
+            unlockTarget.kind === 'trail' ? remainingFreeTrailPicks(profile) : remainingFreeGuidePicks(profile)
+          }
+          onClose={closeUnlockModal}
+          onUpgrade={handleUpgrade}
+          onUseFreePick={handleUseFreePick}
+          onPurchase={handlePurchase}
+        />
+      )}
     </SafeAreaView>
   );
 }

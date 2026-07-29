@@ -4,12 +4,11 @@ import type { FunGuide } from '../types/models';
 
 interface Props {
   guide: FunGuide;
-  locked: boolean;
-  picked: boolean;
-  onToggle: () => void;
+  unlocked: boolean;
+  onPress: () => void;
 }
 
-export function GuideCard({ guide, locked, picked, onToggle }: Props) {
+export function GuideCard({ guide, unlocked, onPress }: Props) {
   return (
     <View style={styles.card}>
       <View>
@@ -17,12 +16,12 @@ export function GuideCard({ guide, locked, picked, onToggle }: Props) {
         <Text style={styles.theme}>{guide.theme}</Text>
       </View>
       <Pressable
-        onPress={onToggle}
-        disabled={locked}
-        style={[styles.pickBtn, picked && !locked && styles.pickBtnPicked]}
+        onPress={onPress}
+        disabled={unlocked}
+        style={[styles.pickBtn, unlocked && styles.pickBtnUnlocked]}
       >
-        <Text style={[styles.pickBtnText, picked && !locked && styles.pickBtnTextPicked]}>
-          {locked ? '🔒' : picked ? 'Selected' : 'Select'}
+        <Text style={[styles.pickBtnText, unlocked && styles.pickBtnTextUnlocked]}>
+          {unlocked ? '✓ Unlocked' : '🔒 Unlock'}
         </Text>
       </Pressable>
     </View>
@@ -60,7 +59,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 12,
   },
-  pickBtnPicked: {
+  pickBtnUnlocked: {
     backgroundColor: colors.pine,
   },
   pickBtnText: {
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.pine,
   },
-  pickBtnTextPicked: {
+  pickBtnTextUnlocked: {
     color: colors.paper,
   },
 });

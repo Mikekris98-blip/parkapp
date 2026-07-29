@@ -15,7 +15,7 @@ export function TrailCard({ trail, locked, onPress }: { trail: TreasureTrail; lo
         <Text style={styles.name}>{trail.name}</Text>
         <Text style={styles.desc}>{trail.description}</Text>
         <Text style={styles.clues}>
-          {trail.checkpointCount} CHECKPOINTS · PREMIUM
+          {trail.checkpointCount} CHECKPOINTS{locked ? ' · TAP TO UNLOCK' : ' · UNLOCKED'}
         </Text>
       </View>
       {locked && <Text style={styles.lockBadge}>🔒</Text>}
