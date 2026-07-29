@@ -1,13 +1,9 @@
-import { parseVisitStartDate } from '../utils/visitDates';
+import { distinctParkKey, parseVisitStartDate } from '../utils/visitDates';
 import type { Visit } from '../types/models';
 
 export interface EarnedBadge {
   key: string;
   earnedAt: string;
-}
-
-function distinctKey(visit: Visit): string {
-  return visit.parkId ?? `manual:${visit.manualParkName ?? ''}`;
 }
 
 function seasonOf(month0: number): 'winter' | 'spring' | 'summer' | 'fall' {
@@ -45,7 +41,7 @@ export function computeEarnedBadges(visits: Visit[]): EarnedBadge[] {
   for (const visit of sorted) {
     const ts = parseVisitStartDate(visit);
     const iso = new Date(ts).toISOString();
-    const key = distinctKey(visit);
+    const key = distinctParkKey(visit);
     const isNewPark = !seenParks.has(key);
     seenParks.add(key);
 

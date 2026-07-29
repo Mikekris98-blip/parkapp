@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { subscribeToVisits } from '../services/visits';
+import { FREE_TIER_PARK_CAP } from '../constants';
+import { capVisitsToRecentParks, distinctParkKey } from '../utils/visitDates';
 import type { Visit } from '../types/models';
 
 export function useVisits() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, profile } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +24,13 @@ export function useVisits() {
     return unsubscribe;
   }, [firebaseUser]);
 
-  const distinctParkKeys = new Set(visits.map((v) => v.parkId ?? `manual:${v.manualParkName}`));
+  const tier = profile?.tier ?? 'free';
+  // A Membership/Premium account that drops back to Free keeps all its visit
+  // data in Firestore untouched — it just only sees its most recently visited
+  // parks until it upgrades again, at which point everything reappears.
+  const visibleVisits = tier === 'free' ? capVisitsToRecentParks(visits, FREE_TIER_PARK_CAP) : visits;
 
-  return { visits, loading, distinctVisitedCount: distinctParkKeys.size, distinctParkKeys };
+  const distinctParkKeys = new Set(visibleVisits.map(distinctParkKey));
+
+  return { visits: visibleVisits, loading, distinctVisitedCount: distinctParkKeys.size, distinctParkKeys };
 }
