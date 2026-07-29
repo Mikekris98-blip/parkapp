@@ -37,11 +37,11 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
 
   return (
     <View style={styles.bar}>
-      {homeAndDiscover.map((route, i) => renderTab(route, i))}
+      <View style={styles.side}>{homeAndDiscover.map((route, i) => renderTab(route, i))}</View>
       <Pressable style={styles.fab} onPress={() => navigation.getParent()?.navigate('AddPark')}>
         <PlusIcon color={colors.paper} />
       </Pressable>
-      {profileRoute && renderTab(profileRoute, 2)}
+      <View style={styles.side}>{profileRoute && renderTab(profileRoute, 2)}</View>
     </View>
   );
 }
@@ -49,12 +49,16 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingTop: 10,
     paddingBottom: 10,
     backgroundColor: colors.paper,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  side: {
+    flex: 1,
+    flexDirection: 'row',
   },
   navItem: {
     flex: 1,
@@ -68,13 +72,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   fab: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    marginLeft: -22,
+    marginTop: -22,
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.rust,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -26,
     shadowColor: colors.rust,
     shadowOpacity: 0.4,
     shadowRadius: 8,

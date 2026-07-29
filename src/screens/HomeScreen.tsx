@@ -1,8 +1,9 @@
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { PlusIcon } from '../components/icons';
 import { ProgressRing } from '../components/ProgressRing';
 import { TierPill } from '../components/TierPill';
 import { VisitedParkRow } from '../components/VisitedParkRow';
@@ -63,6 +64,14 @@ export function HomeScreen({ navigation }: Props) {
                 <Text style={styles.progressSub}>{subText}</Text>
               </View>
             </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.logButton, pressed && styles.logButtonPressed]}
+              onPress={() => navigation.getParent()?.navigate('AddPark')}
+            >
+              <PlusIcon size={26} color={colors.paper} />
+              <Text style={styles.logButtonText}>Log a New Park</Text>
+            </Pressable>
 
             {tier === 'free' && (
               <Text style={styles.upgradeBanner} onPress={openPaywall}>
@@ -143,6 +152,32 @@ const styles = StyleSheet.create({
     color: colors.canvasLight,
     opacity: 0.65,
     marginTop: 4,
+  },
+  logButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginHorizontal: 20,
+    marginBottom: 18,
+    paddingVertical: 16,
+    borderRadius: radii.xl,
+    backgroundColor: colors.rust,
+    shadowColor: colors.rust,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  logButtonPressed: {
+    opacity: 0.85,
+  },
+  logButtonText: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.paper,
   },
   upgradeBanner: {
     marginHorizontal: 20,
