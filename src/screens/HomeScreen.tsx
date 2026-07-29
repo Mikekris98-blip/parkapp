@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -5,6 +6,7 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlusIcon } from '../components/icons';
 import { ProgressRing } from '../components/ProgressRing';
+import { SortDropdown, type SortOption } from '../components/SortDropdown';
 import { TierPill } from '../components/TierPill';
 import { VisitedParkRow } from '../components/VisitedParkRow';
 import { useAuth } from '../context/AuthContext';
@@ -21,10 +23,24 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<AppStackParamList>
 >;
 
+// visit.dates is free text (e.g. "Jun 12 – Jun 15, 2026"), so this best-effort
+// parses a start date out of it and falls back to createdAt when that fails.
+function parseVisitStartDate(visit: Visit): number {
+  const firstPart = visit.dates?.split(/[–—-]/)[0]?.trim();
+  if (firstPart) {
+    const yearMatch = visit.dates.match(/\b(19|20)\d{2}\b/);
+    const candidate = yearMatch && !/\d{4}/.test(firstPart) ? `${firstPart}, ${yearMatch[0]}` : firstPart;
+    const parsed = Date.parse(candidate);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return Date.parse(visit.createdAt);
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const { openPaywall } = usePaywall();
   const { visits, distinctVisitedCount } = useVisits();
+  const [sortOption, setSortOption] = useState<SortOption>('date-desc');
   const tier = profile?.tier ?? 'free';
 
   const total = totalParkCount();
@@ -45,6 +61,25 @@ export function HomeScreen({ navigation }: Props) {
     };
   }
 
+  const sortedVisits = useMemo(() => {
+    const sorted = [...visits];
+    switch (sortOption) {
+      case 'alpha-asc':
+        sorted.sort((a, b) => displayFor(a).name.localeCompare(displayFor(b).name));
+        break;
+      case 'alpha-desc':
+        sorted.sort((a, b) => displayFor(b).name.localeCompare(displayFor(a).name));
+        break;
+      case 'date-asc':
+        sorted.sort((a, b) => parseVisitStartDate(a) - parseVisitStartDate(b));
+        break;
+      case 'date-desc':
+        sorted.sort((a, b) => parseVisitStartDate(b) - parseVisitStartDate(a));
+        break;
+    }
+    return sorted;
+  }, [visits, sortOption]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.appBar}>
@@ -53,7 +88,7 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       <FlatList
-        data={visits}
+        data={sortedVisits}
         keyExtractor={(v) => v.id}
         ListHeaderComponent={
           <>
@@ -82,7 +117,12 @@ export function HomeScreen({ navigation }: Props) {
               </Text>
             )}
 
-            <Text style={styles.sectionLabel}>Recently logged</Text>
+            {visits.length > 0 && (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>Recently logged</Text>
+                <SortDropdown value={sortOption} onChange={setSortOption} />
+              </View>
+            )}
           </>
         }
         renderItem={({ item }) => {
@@ -207,15 +247,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 22,
+    marginBottom: 10,
+  },
   sectionLabel: {
     fontFamily: fonts.display,
     fontSize: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: colors.muted,
-    marginHorizontal: 20,
-    marginTop: 22,
-    marginBottom: 10,
   },
   listContent: {
     paddingBottom: 20,
