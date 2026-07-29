@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CAMPER_BADGES } from '../data/badges';
+import { useAlert } from '../context/AlertContext';
 import { colors, fonts } from '../theme/theme';
 import type { EarnedBadge } from '../services/badges';
 
@@ -15,6 +16,7 @@ function formatEarnedDate(iso: string): string {
 }
 
 export function CamperBadgeShelf({ earned }: Props) {
+  const { showAlert } = useAlert();
   const earnedAtByKey = new Map(earned.map((e) => [e.key, e.earnedAt]));
   const earnedBadges = CAMPER_BADGES.filter((b) => earnedAtByKey.has(b.key));
 
@@ -24,17 +26,24 @@ export function CamperBadgeShelf({ earned }: Props) {
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
-      {earnedBadges.map((badge) => (
-        <View key={badge.key} style={styles.badge}>
-          <View style={styles.ring}>
-            <Text style={styles.emoji}>{badge.emoji}</Text>
-          </View>
-          <Text style={styles.name} numberOfLines={2}>
-            {badge.name}
-          </Text>
-          <Text style={styles.date}>{formatEarnedDate(earnedAtByKey.get(badge.key)!)}</Text>
-        </View>
-      ))}
+      {earnedBadges.map((badge) => {
+        const earnedDate = formatEarnedDate(earnedAtByKey.get(badge.key)!);
+        return (
+          <Pressable
+            key={badge.key}
+            style={({ pressed }) => [styles.badge, pressed && styles.badgePressed]}
+            onPress={() => showAlert(badge.name, `${badge.criteria}. Earned ${earnedDate}.`)}
+          >
+            <View style={styles.ring}>
+              <Text style={styles.emoji}>{badge.emoji}</Text>
+            </View>
+            <Text style={styles.name} numberOfLines={2}>
+              {badge.name}
+            </Text>
+            <Text style={styles.date}>{earnedDate}</Text>
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -48,6 +57,9 @@ const styles = StyleSheet.create({
   badge: {
     width: 84,
     alignItems: 'center',
+  },
+  badgePressed: {
+    opacity: 0.7,
   },
   ring: {
     width: 64,
