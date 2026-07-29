@@ -21,7 +21,7 @@ export function ParkDetailScreen({ route, navigation }: Props) {
   const [photoUrls, setPhotoUrls] = useState(visit.photoUrls);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
 
   const name = park?.name ?? visit.manualParkName ?? 'Unnamed park';
   const loc = park?.loc ?? 'MANUAL ENTRY';
@@ -87,8 +87,8 @@ export function ParkDetailScreen({ route, navigation }: Props) {
           </Text>
 
           <View style={styles.gallery}>
-            {photoUrls.map((url) => (
-              <Pressable key={url} onPress={() => setViewingPhoto(url)}>
+            {photoUrls.map((url, i) => (
+              <Pressable key={url} onPress={() => setViewingIndex(i)}>
                 <Image source={{ uri: url }} style={styles.photo} />
               </Pressable>
             ))}
@@ -104,7 +104,7 @@ export function ParkDetailScreen({ route, navigation }: Props) {
           </Pressable>
         </View>
       </ScrollView>
-      <PhotoViewerModal photoUrl={viewingPhoto} onDismiss={() => setViewingPhoto(null)} />
+      <PhotoViewerModal photos={photoUrls} initialIndex={viewingIndex} onDismiss={() => setViewingIndex(null)} />
     </SafeAreaView>
   );
 }

@@ -49,7 +49,7 @@ export function AddParkScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
 
   async function handleSearchChange(text: string) {
     setSearchText(text);
@@ -181,8 +181,8 @@ export function AddParkScreen({ navigation }: Props) {
           <View style={styles.field}>
             <Text style={styles.label}>Photos</Text>
             <View style={styles.photoRow}>
-              {photoUrls.map((url) => (
-                <Pressable key={url} onPress={() => setViewingPhoto(url)}>
+              {photoUrls.map((url, i) => (
+                <Pressable key={url} onPress={() => setViewingIndex(i)}>
                   <Image source={{ uri: url }} style={styles.photoThumb} />
                 </Pressable>
               ))}
@@ -210,7 +210,7 @@ export function AddParkScreen({ navigation }: Props) {
           <Button title="Save Entry" onPress={handleSave} loading={saving} />
         </ScrollView>
       </KeyboardAvoidingView>
-      <PhotoViewerModal photoUrl={viewingPhoto} onDismiss={() => setViewingPhoto(null)} />
+      <PhotoViewerModal photos={photoUrls} initialIndex={viewingIndex} onDismiss={() => setViewingIndex(null)} />
     </SafeAreaView>
   );
 }
